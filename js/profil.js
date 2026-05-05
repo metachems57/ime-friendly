@@ -944,7 +944,7 @@ function initImeStatusEditor(profileUser, profileName, isOwnProfile) {
     if (!statusNode || !editorNode || !selectNode || !saveButton) return;
 
     const normalizedRole = normalizeKey(profileUser?.role);
-    const shouldShowStatus = normalizedRole === 'professionnel' || normalizedRole === 'admin';
+    const shouldShowStatus = normalizedRole === 'professionnel';
     if (!shouldShowStatus) {
         if (statusRow) statusRow.hidden = true;
         statusNode.hidden = true;
