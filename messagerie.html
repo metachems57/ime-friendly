@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <title>Messagerie - IME-Friendly</title>
+    <link rel="stylesheet" href="style-messagerie.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="messagerie-header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="outils.html" class="nav-link">🛠️ Outils</a>
+                    <a href="blog.html" class="nav-link">📝 Blog</a>
+                    <a href="teams.html" class="nav-link">👥 Vie de l'IME</a>
+                </div>
+                <h1>Messagerie privée</h1>
+                <p>Echanges directs entre membres connectés.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="messagerie-main">
+        <aside class="panel conversations-panel" aria-label="Liste des conversations">
+            <h2>Conversations</h2>
+            <div class="notifications-toolbar">
+                <button id="notificationsToggleBtn" type="button" class="notifications-btn">
+                    🔔 Notifications
+                    <span class="messages-badge" data-notifications-badge hidden>0</span>
+                </button>
+            </div>
+            <section id="notificationsPanel" class="notifications-panel" hidden aria-label="Notifications d'activité">
+                <div class="notifications-panel-header">
+                    <h3>Dernières notifications</h3>
+                </div>
+                <div id="notificationsList" class="notifications-list"></div>
+                <p id="notificationsEmpty" class="empty-state" hidden>Aucune notification pour le moment.</p>
+            </section>
+
+            <form id="startConversationForm" class="new-conversation-form">
+                <label for="contactSelect">Nouveau message</label>
+                <div class="new-conversation-row">
+                    <select id="contactSelect"></select>
+                    <button type="submit">Ouvrir</button>
+                </div>
+            </form>
+
+            <div id="conversationsList" class="conversations-list"></div>
+            <p id="conversationsEmpty" class="empty-state" hidden>Aucune conversation pour le moment.</p>
+        </aside>
+
+        <section class="panel thread-panel" aria-label="Discussion active">
+            <div class="thread-header">
+                <div class="thread-header-top">
+                    <div>
+                        <h2 id="threadTitle">Sélectionnez une conversation</h2>
+                        <p id="threadMeta">Choisissez un contact à gauche pour commencer.</p>
+                    </div>
+                    <button id="adminBlockBtn" type="button" class="admin-btn" hidden></button>
+                </div>
+            </div>
+
+            <div id="threadMessages" class="thread-messages"></div>
+
+            <form id="messageForm" class="message-form">
+                <textarea id="messageInput" maxlength="1000" placeholder="Écrire un message..." disabled></textarea>
+                <div class="message-form-footer">
+                    <span id="messageCount">0 / 1000</span>
+                    <button type="submit" id="sendMessageBtn" disabled>Envoyer</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <section id="adminModerationPanel" class="admin-moderation panel" hidden>
+        <div class="admin-moderation-header">
+            <h2>Modération admin</h2>
+            <p>Signalements des utilisateurs</p>
+        </div>
+        <div id="reportsList" class="reports-list"></div>
+        <p id="reportsEmpty" class="empty-state" hidden>Aucun signalement ouvert.</p>
+    </section>
+
+    <footer class="messagerie-footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/messaging-core.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+    <script src="js/messagerie.js"></script>
+</body>
+</html>

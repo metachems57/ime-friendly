@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <title>Vie de l'IME - IME-Friendly</title>
+    <link rel="stylesheet" href="style-teams.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="teams-header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="outils.html" class="nav-link">🛠️ Outils</a>
+                    <a href="blog.html" class="nav-link">📝 Blog</a>
+                </div>
+                <h1>Vie de l'IME</h1>
+                <p>Suivez les derniers contenus publies par les intervenants et retrouvez l'equipe.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="teams-main">
+        <div class="teams-top-layout">
+            <section class="home-agenda teams-agenda-panel" aria-label="Agenda des événements à venir">
+                <h3>Agenda des évènements à venir</h3>
+                <p id="teamsAgendaToday" class="home-agenda-today"></p>
+                <div class="home-agenda-month-nav">
+                    <button id="teamsAgendaPrevMonth" class="home-agenda-month-btn" type="button" aria-label="Mois précédent">&#10094;</button>
+                    <p id="teamsAgendaMonthLabel" class="home-agenda-month"></p>
+                    <button id="teamsAgendaNextMonth" class="home-agenda-month-btn" type="button" aria-label="Mois suivant">&#10095;</button>
+                </div>
+                <div class="home-agenda-weekdays" aria-hidden="true">
+                    <span>L</span>
+                    <span>M</span>
+                    <span>M</span>
+                    <span>J</span>
+                    <span>V</span>
+                    <span>S</span>
+                    <span>D</span>
+                </div>
+                <div id="teamsAgendaGrid" class="home-agenda-grid"></div>
+            </section>
+
+            <div class="teams-live-column">
+                <section class="teams-intro">
+                    <h2>A la une de l'IME</h2>
+                    <p>
+                        Derniers post de vos intervenants
+                    </p>
+                </section>
+
+                <section class="ime-live-section" aria-label="Derniers contenus des intervenants">
+                    <div class="ime-live-carousel">
+                        <button id="imeLivePrev" class="carousel-arrow" type="button" aria-label="Contenu precedent">
+                            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                        </button>
+
+                        <a id="imeLiveCard" class="ime-live-card" href="#">
+                            <img id="imeLiveImage" class="ime-live-image" alt="Apercu du contenu">
+                            <div class="ime-live-content">
+                                <p id="imeLiveBadge" class="ime-live-badge"></p>
+                                <h3 id="imeLiveTitle" class="ime-live-title"></h3>
+                                <p id="imeLiveMeta" class="ime-live-meta"></p>
+                            </div>
+                        </a>
+
+                        <button id="imeLiveNext" class="carousel-arrow" type="button" aria-label="Contenu suivant">
+                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <p id="imeLiveCounter" class="ime-live-counter"></p>
+                    <p id="imeLiveEmpty" class="ime-live-empty" hidden>
+                        Aucun contenu intervenant disponible pour le moment.
+                    </p>
+                </section>
+            </div>
+        </div>
+
+        <section class="teams-intro">
+            <h2>Organisation de l'equipe</h2>
+            <p>
+                Ci-dessous les profils de vos intervenants
+            </p>
+        </section>
+
+        <section id="teamSections" class="team-sections" aria-live="polite"></section>
+    </main>
+
+    <footer class="teams-footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/messaging-core.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+    <script src="js/teams.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <title>Outils Pratiques - IME-Friendly</title>
+    <link rel="stylesheet" href="style-outils.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="blog.html" class="nav-link">📝 Blog</a>
+                    <a href="teams.html" class="nav-link">👥 Vie de l'IME</a>
+                </div>
+                <h1>🛠️ Outils Pratiques</h1>
+                <p class="subtitle">Ressources éducatives à reproduire à la maison</p>
+            </div>
+        </div>
+    </header>
+    <main class="container">
+        <section class="add-tool-section">
+            <h2>➕ Ajouter un nouvel outil</h2>
+            <form id="addToolForm" class="tool-form">
+                <div class="form-group">
+                    <input type="text" name="name" placeholder="Titre de l'outil" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" name="age" placeholder="Tranche d'âge" required>
+                </div>
+                
+                <div id="steps-container" class="steps-container">
+                    </div>
+                
+                <button type="button" id="add-step-btn" class="add-step-btn">Ajouter une étape</button>
+                
+                <button type="submit" class="submit-btn">Ajouter l'outil</button>
+            </form>
+        </section>
+
+        <section class="tools-feed-column">
+            <div class="search-section">
+                <input type="text" id="tool-search" class="search-input" placeholder="Rechercher un outil par titre ou par âge...">
+            </div>
+            <section class="tools-grid" id="tools-grid">
+            </section>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/messaging-core.js"></script>
+    <script src="js/user-favorites.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+    <script src="js/outils.js"></script>
+</body>
+</html>

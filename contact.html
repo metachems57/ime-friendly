@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <title>Contact - IME-Friendly</title>
+    <link rel="stylesheet" href="style-contact.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="contact-header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="outils.html" class="nav-link">🛠️ Outils</a>
+                    <a href="blog.html" class="nav-link">📝 Blog</a>
+                    <a href="teams.html" class="nav-link">👥 Vie de l'IME</a>
+                </div>
+                <h1>Contact</h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="contact-main">
+        <section class="contact-card">
+            <h2>Urgence</h2>
+            <p>Pour toute urgence, vous pouvez contacter ce numéro : <strong>.....</strong></p>
+            <h3 class="contact-subtitle">Nous contacter</h3>
+            <p>
+                Pour améliorer notre site grâce à vos remarques, vous pouvez nous contacter via
+                <a href="mailto:ime-friendly@gmail.com">ime-friendly@gmail.com</a>.
+            </p>
+            <p>
+                Vous pouvez aussi passer directement par notre
+                <a id="adminProfileLink" href="profil.html">profil</a>
+                administrateur pour nous laisser un message.
+            </p>
+        </section>
+
+        <section class="contact-card">
+            <h2>Faire un don</h2>
+            <p>Le module de don sera branché après la mise en place du backend.</p>
+            <button id="donateBtn" class="donate-btn" type="button">Faire un don</button>
+        </section>
+    </main>
+
+    <footer class="contact-footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/messaging-core.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+    <script src="js/contact.js"></script>
+</body>
+</html>

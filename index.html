@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f5ea8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="IME-Friendly">
+<link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+<title>IME-Friendly</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style-messages.css">
+<link rel="stylesheet" href="style-reseau.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+<div class="image-container">
+    <img class="hero-background" src="images/fond page d'acceuil.png" alt="IME-Friendly - Toutes vos demandes méritent une réponse">
+
+<header>
+    <div class="header-top">
+        <div class="login-prompt" id="loginPrompt">
+            <div id="notConnectedState">
+		 <h2>Bienvenue</h2>
+                <p>Connectez-vous pour accéder aux services</p>            
+            <button class="login-btn" onclick="showLogin()">Se connecter</button>
+            </div>
+            <div id="connectedState" style="display: none;">
+                <p>Connecté en tant que <span id="userEmailDisplay"></span></p>
+                <div class="connected-actions">
+                    <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+                    <a id="profileBtn" class="profile-btn" href="profil.html" style="display: none;">Mon profil</a>
+                    <a id="messagesBtn" class="profile-btn messages-link" href="messagerie.html" style="display: none;"><span class="messages-label">Messagerie</span><span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+                <button id="resetPasswordAdminBtn" class="profile-btn" type="button" style="display: none;" onclick="showAdminResetPassword()">Réinitialiser un mot de passe</button>
+            </div>
+            <div id="homeNavBlock" class="home-nav-block">
+                <nav aria-label="Navigation principale accueil (desktop)">
+                    <a href="index.html" class="active">Accueil</a>
+                    <a href="ressources.html">Ressources</a>
+                    <a href="contact.html">Contact</a>
+                </nav>
+            </div>
+        </div>
+    </div>
+<div class="header-h1"> 
+   <h1>IME-Friendly</h1>
+<button id="installAppBtn" class="install-app-btn" type="button" style="display: none;">Installer l'app</button>
+    <nav>
+        <a href="index.html" class="active">Accueil</a>
+        <a href="ressources.html">Ressources</a>
+        <a href="contact.html">Contact</a>
+    </nav>
+</div>
+<img class="home-logo-pc" src="images/Logo inclusif IME-FRIENDLY avec icônes symboliques.png" alt="Logo inclusif IME-Friendly">
+</header>
+<main>
+  <div class="home-top-layout">
+    <section class="home-agenda" aria-label="Agenda des événements à venir">
+      <h3>Agenda des évènements à venir</h3>
+      <p id="homeAgendaToday" class="home-agenda-today"></p>
+      <div class="home-agenda-month-nav">
+        <button id="homeAgendaPrevMonth" class="home-agenda-month-btn" type="button" aria-label="Mois précédent">&#10094;</button>
+        <p id="homeAgendaMonthLabel" class="home-agenda-month"></p>
+        <button id="homeAgendaNextMonth" class="home-agenda-month-btn" type="button" aria-label="Mois suivant">&#10095;</button>
+      </div>
+      <div class="home-agenda-weekdays" aria-hidden="true">
+        <span>L</span>
+        <span>M</span>
+        <span>M</span>
+        <span>J</span>
+        <span>V</span>
+        <span>S</span>
+        <span>D</span>
+      </div>
+      <div id="homeAgendaGrid" class="home-agenda-grid"></div>
+    </section>
+
+    <!-- Sections superposées -->
+    <div class="overlay-sections">
+      <div class="overlay-card">
+        <h2>Notre mission</h2>
+        <p>Aider les parents à renforcer leurs liens avec les IME de la région GRAND EST.</p>
+      </div>
+      <div class="overlay-card">
+        <h2>Nos services</h2>
+        <p>Nous Proposons des outils pour faciliter la communication et le partage avec votre IME.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section de services -->
+  <div class="service-section">
+    <a href="#" class="service-card service-card-reseau" onclick="checkConnection(event, 'reseau.html')">
+      <div class="icon"><i class="fas fa-comments"></i></div>
+      <h3>Réseau Social</h3>
+      <p>Partagez, likez, commentez dans une ambiance décontractée !</p>
+      <div class="service-media-preview">
+        <img id="reseauPreviewImg" alt="Aperçu du dernier post réseau">
+        <span id="reseauPreviewTitle">Aucun post récent.</span>
+      </div>
+    </a>
+    <a href="#" class="service-card service-card-outils" onclick="checkConnection(event, 'outils.html')">
+      <div class="icon"><i class="fas fa-tools"></i></div>
+      <h3>Outils Pratiques</h3>
+      <p>Découvrez les jeux et outils éducatifs à reproduire à la maison.</p>
+      <div class="service-media-preview">
+        <img id="outilsPreviewImg" alt="Aperçu du dernier outil">
+        <span id="outilsPreviewTitle">Aucun outil récent.</span>
+      </div>
+    </a>
+    <div class="service-card service-card-vie">
+      <a href="teams.html" class="service-card-vie-main-link">
+        <h3>Vie de l'IME</h3>
+        <p>Vos intervenants, Leurs quotidiens au sein de l'IME.</p>
+      </a>
+      <div class="ime-profile-carousel" aria-label="Aperçu des profils intervenants">
+        <span id="imeProfilePrev" class="ime-carousel-arrow" role="button" tabindex="0" aria-label="Profil précédent">&#10094;</span>
+        <div id="imeProfileWindow" class="ime-profile-window">
+          <div id="imeProfileTrack" class="ime-profile-track">
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+            <a class="ime-profile-avatar is-empty" href="profil.html" aria-label="Profil intervenant vide"></a>
+          </div>
+        </div>
+        <span id="imeProfileNext" class="ime-carousel-arrow" role="button" tabindex="0" aria-label="Profil suivant">&#10095;</span>
+      </div>
+    </div>
+    <div class="service-card service-card-ressources">
+      <a href="ressources.html" class="service-card-ressources-main-link">
+        <h3>Ressources</h3>
+        <p>Sites utiles pour accompagner les personnes en situation de handicap.</p>
+      </a>
+      <div class="resources-home-carousel" id="homeResourcesCarousel" aria-label="Carrousel des ressources utiles">
+        <button id="homeResourcesPrev" class="resource-home-arrow" type="button" aria-label="Ressources précédentes">&#10094;</button>
+        <div class="resources-home-window" id="homeResourcesWindow">
+          <div class="resources-home-track" id="homeResourcesTrack"></div>
+        </div>
+        <button id="homeResourcesNext" class="resource-home-arrow" type="button" aria-label="Ressources suivantes">&#10095;</button>
+      </div>
+    </div>
+    <a href="#" class="service-card service-card-blog" onclick="checkConnection(event, 'blog.html')">
+      <div class="icon"><i class="fas fa-newspaper"></i></div>
+      <h3>Blog</h3>
+      <p>Informez-vous, lancez un sujet et partagez votre expérience.</p>
+      <p class="service-latest-line" id="blogLatestLine">Dernier contenu : Aucun contenu récent.</p>
+    </a>
+  </div>
+
+  <!-- Modals -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeLogin()">&times;</span>
+      <h3>Connexion à IME-Friendly</h3>
+      <form id="loginForm">
+        <input type="email" placeholder="Email" required>
+        <input type="password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+      </form>
+      <p>Accès réservé aux parents et professionnels des IME du Grand Est</p>
+      <div class="signup-link">
+        <a href="#" onclick="showSignup()">Pas encore de compte ? Créez-en un !</a>
+      </div>
+    </div>
+  </div>
+  <div id="signupModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSignup()">&times;</span>
+      <h3>Créer un compte</h3>
+      <form id="signupForm">
+        <input type="text" id="signupName" placeholder="Nom et prénom" required>
+        <input type="email" id="signupEmail" placeholder="Email" required>
+        <input type="password" id="signupPassword" placeholder="Mot de passe" required>
+        <select id="signupRole" required>
+          <option value="" disabled selected>Votre rôle</option>
+          <option value="parent">Parent</option>
+          <option value="professionnel">Professionnel</option>
+        </select>
+        <button type="submit">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAdmin()">&times;</span>
+      <h3>Validation de compte administrateur</h3>
+      <form id="adminForm">
+        <p>Entrez l'email du compte à valider :</p>
+        <input type="email" id="adminEmail" placeholder="Email de l'utilisateur" required>
+        <button type="submit">Valider le compte</button>
+      </form>
+    </div>
+  </div>
+  <div id="adminResetPasswordModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAdminResetPassword()">&times;</span>
+      <h3>Réinitialiser un mot de passe</h3>
+      <form id="adminResetPasswordForm">
+        <input type="email" id="adminResetEmail" placeholder="Email du compte" required>
+        <input type="password" id="adminTemporaryPassword" placeholder="Mot de passe temporaire" required minlength="8">
+        <button type="submit">Appliquer la réinitialisation</button>
+      </form>
+    </div>
+  </div>
+</main>
+</div>
+    <footer class="home-footer">
+        <p>&copy; 2025 IME-Friendly - Tous droits réservés</p>
+    </footer>
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/messaging-core.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/resources-data.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

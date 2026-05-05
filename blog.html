@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+    <title>Questions & Sujets - IME-Friendly</title>
+    <link rel="stylesheet" href="style-blog.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="outils.html" class="nav-link">🛠️ Outils</a>
+                    <a href="teams.html" class="nav-link">👥 Vie de l'IME</a>
+                </div>
+                <h1>💬 Questions & Sujets</h1>
+                <p class="subtitle">Espace de discussion et d'actualités de votre IME</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="create-post">
+            <h2>📝 Nouvelle question/sujet</h2>
+            <form id="postForm">
+                <select id="postCategory" required>
+                    <option value="" disabled selected>Choisir une catégorie</option>
+                    <option value="general">Général</option>
+                    <option value="education">Éducation</option>
+                    <option value="activities">Activités</option>
+                    <option value="resources">Ressources</option>
+                    <option value="announcements">Annonces</option>
+                </select>
+                <div id="eventDateFieldGroup" class="event-date-group" hidden>
+                    <label for="eventDateInput">Date de l'évènement</label>
+                    <input type="date" id="eventDateInput">
+                </div>
+                <input type="text" id="postTitle" placeholder="Titre de votre question/sujet" required>
+                <textarea id="postContent" placeholder="Détails..." required></textarea>
+                <button type="submit">Publier</button>
+            </form>
+        </section>
+
+        <section class="blog-feed-column">
+            <section class="search-posts" aria-label="Recherche des sujets">
+                <div class="search-posts-controls">
+                    <div class="search-field">
+                        <label for="searchTheme">Thème</label>
+                        <select id="searchTheme">
+                            <option value="all">Tous les thèmes</option>
+                            <option value="general">Général</option>
+                            <option value="education">Éducation</option>
+                            <option value="activities">Activités</option>
+                            <option value="resources">Ressources</option>
+                            <option value="announcements">Annonces</option>
+                        </select>
+                    </div>
+                    <div class="search-field search-field-text">
+                        <label for="searchQuery">Sujet</label>
+                        <input type="text" id="searchQuery" placeholder="Rechercher un sujet précis...">
+                    </div>
+                    <button id="searchResetBtn" class="search-reset-btn" type="button">Réinitialiser</button>
+                </div>
+            </section>
+
+            <section class="blog-posts-panel">
+                <h2 class="blog-feed-title">📰 Fil des sujets</h2>
+                <div class="posts-container" id="postsContainer">
+                    <!-- Les posts apparaîtront ici -->
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+
+<script src="js/data-store.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+<script src="js/messaging-core.js"></script>
+<script src="js/user-favorites.js"></script>
+<script src="js/activity-notifications.js"></script>
+<script src="js/messages-widget.js"></script>
+<script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+<script src="js/blog.js"></script>
+</body>
+</html>

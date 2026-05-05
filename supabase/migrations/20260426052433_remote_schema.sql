@@ -1,0 +1,1460 @@
+
+
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+
+COMMENT ON SCHEMA "public" IS 'standard public schema';
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  requested_role text;
+begin
+  requested_role := lower(coalesce(new.raw_user_meta_data->>'requested_role', 'parent'));
+  if requested_role not in ('parent','pro','admin') then
+    requested_role := 'parent';
+  end if;
+
+  insert into public.profiles (
+    id, email, display_name, role, is_validated, ime_status
+  )
+  values (
+    new.id,
+    new.email,
+    coalesce(nullif(new.raw_user_meta_data->>'display_name',''), split_part(new.email,'@',1), 'Membre'),
+    requested_role,
+    false,
+    case when requested_role = 'pro' then 'non_renseigne' else 'parent' end
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_admin"("uid" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = uid
+      and p.role = 'admin'
+      and p.is_validated = true
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_admin"("uid" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_validated"("uid" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = uid
+      and p.is_validated = true
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_validated"("uid" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog'
+    AS $$
+DECLARE
+  cmd record;
+BEGIN
+  FOR cmd IN
+    SELECT *
+    FROM pg_event_trigger_ddl_commands()
+    WHERE command_tag IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+      AND object_type IN ('table','partitioned table')
+  LOOP
+     IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN
+      BEGIN
+        EXECUTE format('alter table if exists %s enable row level security', cmd.object_identity);
+        RAISE LOG 'rls_auto_enable: enabled RLS on %', cmd.object_identity;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE LOG 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;
+      END;
+     ELSE
+        RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;
+     END IF;
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."rls_auto_enable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
+
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."activity_notifications" (
+    "id" bigint NOT NULL,
+    "recipient_id" "uuid" NOT NULL,
+    "actor_id" "uuid",
+    "type" "text" DEFAULT 'comment'::"text" NOT NULL,
+    "source" "text" DEFAULT 'reseau'::"text" NOT NULL,
+    "source_post_id" bigint,
+    "post_title" "text" DEFAULT ''::"text" NOT NULL,
+    "message" "text" DEFAULT ''::"text" NOT NULL,
+    "is_read" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "read_at" timestamp with time zone,
+    CONSTRAINT "activity_notifications_source_check" CHECK (("source" = ANY (ARRAY['reseau'::"text", 'blog'::"text", 'tools'::"text", 'system'::"text"]))),
+    CONSTRAINT "activity_notifications_type_check" CHECK (("type" = ANY (ARRAY['like'::"text", 'comment'::"text", 'reply'::"text", 'system'::"text"])))
+);
+
+
+ALTER TABLE "public"."activity_notifications" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."activity_notifications" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."activity_notifications_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."blog_comments" (
+    "id" bigint NOT NULL,
+    "post_id" bigint NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "content" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."blog_comments" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."blog_comments" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."blog_comments_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."blog_posts" (
+    "id" bigint NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "content" "text" DEFAULT ''::"text" NOT NULL,
+    "category" "text" DEFAULT 'general'::"text" NOT NULL,
+    "event_date" "date",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "blog_posts_category_check" CHECK (("category" = ANY (ARRAY['general'::"text", 'education'::"text", 'activities'::"text", 'resources'::"text", 'announcements'::"text"])))
+);
+
+
+ALTER TABLE "public"."blog_posts" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."blog_posts" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."blog_posts_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."message_reports" (
+    "id" bigint NOT NULL,
+    "message_id" bigint,
+    "reporter_id" "uuid" NOT NULL,
+    "reported_user_id" "uuid",
+    "reason" "text" DEFAULT ''::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "resolved_at" timestamp with time zone
+);
+
+
+ALTER TABLE "public"."message_reports" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."message_reports" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."message_reports_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."messaging_blocks" (
+    "id" bigint NOT NULL,
+    "blocked_user_id" "uuid" NOT NULL,
+    "blocked_by_admin_id" "uuid" NOT NULL,
+    "reason" "text" DEFAULT ''::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "lifted_at" timestamp with time zone
+);
+
+
+ALTER TABLE "public"."messaging_blocks" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."messaging_blocks" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."messaging_blocks_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."private_messages" (
+    "id" bigint NOT NULL,
+    "from_user_id" "uuid" NOT NULL,
+    "to_user_id" "uuid" NOT NULL,
+    "content" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "read_at" timestamp with time zone,
+    CONSTRAINT "private_messages_content_check" CHECK (("length"(TRIM(BOTH FROM "content")) > 0))
+);
+
+
+ALTER TABLE "public"."private_messages" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."private_messages" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."private_messages_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."profiles" (
+    "id" "uuid" NOT NULL,
+    "display_name" "text" DEFAULT ''::"text" NOT NULL,
+    "role" "text" DEFAULT 'parent'::"text" NOT NULL,
+    "ime_status" "text" DEFAULT 'parent'::"text" NOT NULL,
+    "job_title" "text",
+    "avatar_url" "text",
+    "is_validated" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "email" "text",
+    "professional_title" "text",
+    CONSTRAINT "profiles_role_check" CHECK (("role" = ANY (ARRAY['parent'::"text", 'pro'::"text", 'admin'::"text"])))
+);
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."reseau_comments" (
+    "id" bigint NOT NULL,
+    "post_id" bigint NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "content" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."reseau_comments" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."reseau_comments" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."reseau_comments_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."reseau_posts" (
+    "id" bigint NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "content" "text" DEFAULT ''::"text" NOT NULL,
+    "image_data" "text",
+    "likes_count" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."reseau_posts" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."reseau_posts" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."reseau_posts_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."tools" (
+    "id" bigint NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "name" "text" DEFAULT ''::"text" NOT NULL,
+    "age" "text" DEFAULT ''::"text" NOT NULL,
+    "steps_json" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "tools_steps_is_array" CHECK (("jsonb_typeof"("steps_json") = 'array'::"text"))
+);
+
+
+ALTER TABLE "public"."tools" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."tools" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."tools_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."user_favorites" (
+    "id" bigint NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "source" "text" NOT NULL,
+    "item_id" "text" NOT NULL,
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "href" "text" DEFAULT ''::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "user_favorites_source_check" CHECK (("source" = ANY (ARRAY['reseau'::"text", 'blog'::"text", 'tool'::"text"])))
+);
+
+
+ALTER TABLE "public"."user_favorites" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."user_favorites" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME "public"."user_favorites_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+ALTER TABLE ONLY "public"."activity_notifications"
+    ADD CONSTRAINT "activity_notifications_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."blog_comments"
+    ADD CONSTRAINT "blog_comments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."blog_posts"
+    ADD CONSTRAINT "blog_posts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."message_reports"
+    ADD CONSTRAINT "message_reports_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."messaging_blocks"
+    ADD CONSTRAINT "messaging_blocks_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."private_messages"
+    ADD CONSTRAINT "private_messages_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."reseau_comments"
+    ADD CONSTRAINT "reseau_comments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."reseau_posts"
+    ADD CONSTRAINT "reseau_posts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."tools"
+    ADD CONSTRAINT "tools_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."user_favorites"
+    ADD CONSTRAINT "uq_user_favorites_unique_item" UNIQUE ("user_id", "source", "item_id");
+
+
+
+ALTER TABLE ONLY "public"."user_favorites"
+    ADD CONSTRAINT "user_favorites_pkey" PRIMARY KEY ("id");
+
+
+
+CREATE INDEX "idx_activity_notifications_recipient_created" ON "public"."activity_notifications" USING "btree" ("recipient_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_activity_notifications_recipient_unread" ON "public"."activity_notifications" USING "btree" ("recipient_id", "is_read");
+
+
+
+CREATE INDEX "idx_blog_comments_post_id" ON "public"."blog_comments" USING "btree" ("post_id");
+
+
+
+CREATE INDEX "idx_blog_posts_category" ON "public"."blog_posts" USING "btree" ("category");
+
+
+
+CREATE INDEX "idx_blog_posts_created_at" ON "public"."blog_posts" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_blog_posts_event_date" ON "public"."blog_posts" USING "btree" ("event_date");
+
+
+
+CREATE INDEX "idx_message_reports_created" ON "public"."message_reports" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_message_reports_created_at" ON "public"."message_reports" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_message_reports_reporter" ON "public"."message_reports" USING "btree" ("reporter_id");
+
+
+
+CREATE INDEX "idx_messaging_blocks_active" ON "public"."messaging_blocks" USING "btree" ("blocked_user_id") WHERE ("lifted_at" IS NULL);
+
+
+
+CREATE INDEX "idx_messaging_blocks_blocked_user" ON "public"."messaging_blocks" USING "btree" ("blocked_user_id");
+
+
+
+CREATE INDEX "idx_private_messages_created_at" ON "public"."private_messages" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_private_messages_from_created" ON "public"."private_messages" USING "btree" ("from_user_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_private_messages_from_user" ON "public"."private_messages" USING "btree" ("from_user_id");
+
+
+
+CREATE INDEX "idx_private_messages_to_created" ON "public"."private_messages" USING "btree" ("to_user_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_private_messages_to_user" ON "public"."private_messages" USING "btree" ("to_user_id");
+
+
+
+CREATE INDEX "idx_profiles_role" ON "public"."profiles" USING "btree" ("role");
+
+
+
+CREATE INDEX "idx_profiles_validated" ON "public"."profiles" USING "btree" ("is_validated");
+
+
+
+CREATE INDEX "idx_reseau_comments_post_id" ON "public"."reseau_comments" USING "btree" ("post_id");
+
+
+
+CREATE INDEX "idx_reseau_posts_created_at" ON "public"."reseau_posts" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_tools_created_at" ON "public"."tools" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_user_favorites_user_created" ON "public"."user_favorites" USING "btree" ("user_id", "created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "uq_messaging_blocks_active" ON "public"."messaging_blocks" USING "btree" ("blocked_user_id") WHERE ("lifted_at" IS NULL);
+
+
+
+CREATE OR REPLACE TRIGGER "trg_blog_posts_updated_at" BEFORE UPDATE ON "public"."blog_posts" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_profiles_updated_at" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_reseau_posts_updated_at" BEFORE UPDATE ON "public"."reseau_posts" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_tools_updated_at" BEFORE UPDATE ON "public"."tools" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_user_favorites_updated_at" BEFORE UPDATE ON "public"."user_favorites" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+ALTER TABLE ONLY "public"."activity_notifications"
+    ADD CONSTRAINT "activity_notifications_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."activity_notifications"
+    ADD CONSTRAINT "activity_notifications_recipient_id_fkey" FOREIGN KEY ("recipient_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blog_comments"
+    ADD CONSTRAINT "blog_comments_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blog_comments"
+    ADD CONSTRAINT "blog_comments_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."blog_posts"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blog_posts"
+    ADD CONSTRAINT "blog_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."message_reports"
+    ADD CONSTRAINT "message_reports_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."private_messages"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."message_reports"
+    ADD CONSTRAINT "message_reports_reported_user_id_fkey" FOREIGN KEY ("reported_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."message_reports"
+    ADD CONSTRAINT "message_reports_reporter_id_fkey" FOREIGN KEY ("reporter_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."messaging_blocks"
+    ADD CONSTRAINT "messaging_blocks_blocked_by_admin_id_fkey" FOREIGN KEY ("blocked_by_admin_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."messaging_blocks"
+    ADD CONSTRAINT "messaging_blocks_blocked_user_id_fkey" FOREIGN KEY ("blocked_user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."private_messages"
+    ADD CONSTRAINT "private_messages_from_user_id_fkey" FOREIGN KEY ("from_user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."private_messages"
+    ADD CONSTRAINT "private_messages_to_user_id_fkey" FOREIGN KEY ("to_user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."profiles"
+    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."reseau_comments"
+    ADD CONSTRAINT "reseau_comments_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."reseau_comments"
+    ADD CONSTRAINT "reseau_comments_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."reseau_posts"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."reseau_posts"
+    ADD CONSTRAINT "reseau_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."tools"
+    ADD CONSTRAINT "tools_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_favorites"
+    ADD CONSTRAINT "user_favorites_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE "public"."activity_notifications" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "activity_notifications_delete_own_or_admin" ON "public"."activity_notifications" FOR DELETE TO "authenticated" USING ((("recipient_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "activity_notifications_insert_actor" ON "public"."activity_notifications" FOR INSERT TO "authenticated" WITH CHECK (((("actor_id" IS NULL) OR ("actor_id" = "auth"."uid"())) AND ("recipient_id" <> "auth"."uid"())));
+
+
+
+CREATE POLICY "activity_notifications_insert_authenticated" ON "public"."activity_notifications" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "p"
+  WHERE (("p"."id" = "auth"."uid"()) AND ("p"."is_validated" = true)))));
+
+
+
+CREATE POLICY "activity_notifications_select_own" ON "public"."activity_notifications" FOR SELECT TO "authenticated" USING (("recipient_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "activity_notifications_update_own" ON "public"."activity_notifications" FOR UPDATE TO "authenticated" USING (("recipient_id" = "auth"."uid"())) WITH CHECK (("recipient_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "activity_notifications_update_own_or_admin" ON "public"."activity_notifications" FOR UPDATE TO "authenticated" USING ((("recipient_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("recipient_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."blog_comments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "blog_comments_delete_owner_or_admin" ON "public"."blog_comments" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "blog_comments_insert_validated" ON "public"."blog_comments" FOR INSERT TO "authenticated" WITH CHECK ((("author_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "blog_comments_select_all" ON "public"."blog_comments" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "blog_comments_update_owner_or_admin" ON "public"."blog_comments" FOR UPDATE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."blog_posts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "blog_posts_delete_owner_or_admin" ON "public"."blog_posts" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "blog_posts_insert_validated" ON "public"."blog_posts" FOR INSERT TO "authenticated" WITH CHECK ((("author_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "blog_posts_select_all" ON "public"."blog_posts" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "blog_posts_update_owner_or_admin" ON "public"."blog_posts" FOR UPDATE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."message_reports" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "message_reports_delete_admin" ON "public"."message_reports" FOR DELETE TO "authenticated" USING ("public"."is_admin"("auth"."uid"()));
+
+
+
+CREATE POLICY "message_reports_delete_admin_only" ON "public"."message_reports" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))));
+
+
+
+CREATE POLICY "message_reports_insert_reporter" ON "public"."message_reports" FOR INSERT TO "authenticated" WITH CHECK ((("reporter_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "message_reports_select_own_or_admin" ON "public"."message_reports" FOR SELECT TO "authenticated" USING ((("reporter_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "message_reports_select_reporter_or_admin" ON "public"."message_reports" FOR SELECT TO "authenticated" USING ((("reporter_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "message_reports_update_admin" ON "public"."message_reports" FOR UPDATE TO "authenticated" USING ("public"."is_admin"("auth"."uid"())) WITH CHECK ("public"."is_admin"("auth"."uid"()));
+
+
+
+CREATE POLICY "message_reports_update_admin_only" ON "public"."message_reports" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))));
+
+
+
+ALTER TABLE "public"."messaging_blocks" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "messaging_blocks_delete_admin" ON "public"."messaging_blocks" FOR DELETE TO "authenticated" USING ("public"."is_admin"("auth"."uid"()));
+
+
+
+CREATE POLICY "messaging_blocks_delete_admin_only" ON "public"."messaging_blocks" FOR DELETE TO "authenticated" USING ((("blocked_by_admin_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "messaging_blocks_insert_admin" ON "public"."messaging_blocks" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_admin"("auth"."uid"()));
+
+
+
+CREATE POLICY "messaging_blocks_insert_admin_only" ON "public"."messaging_blocks" FOR INSERT TO "authenticated" WITH CHECK ((("blocked_by_admin_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "messaging_blocks_select_authenticated" ON "public"."messaging_blocks" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "messaging_blocks_select_self_or_admin" ON "public"."messaging_blocks" FOR SELECT TO "authenticated" USING ((("blocked_user_id" = "auth"."uid"()) OR ("blocked_by_admin_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "messaging_blocks_update_admin" ON "public"."messaging_blocks" FOR UPDATE TO "authenticated" USING ("public"."is_admin"("auth"."uid"())) WITH CHECK ("public"."is_admin"("auth"."uid"()));
+
+
+
+CREATE POLICY "messaging_blocks_update_admin_only" ON "public"."messaging_blocks" FOR UPDATE TO "authenticated" USING ((("blocked_by_admin_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("blocked_by_admin_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."private_messages" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "private_messages_delete_participants_or_admin" ON "public"."private_messages" FOR DELETE TO "authenticated" USING ((("from_user_id" = "auth"."uid"()) OR ("to_user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "private_messages_insert_sender" ON "public"."private_messages" FOR INSERT TO "authenticated" WITH CHECK ((("from_user_id" = "auth"."uid"()) AND ("to_user_id" <> "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "private_messages_insert_sender_validated" ON "public"."private_messages" FOR INSERT TO "authenticated" WITH CHECK ((("from_user_id" = "auth"."uid"()) AND ("from_user_id" <> "to_user_id") AND (EXISTS ( SELECT 1
+   FROM "public"."profiles" "p"
+  WHERE (("p"."id" = "auth"."uid"()) AND ("p"."is_validated" = true))))));
+
+
+
+CREATE POLICY "private_messages_select_participants" ON "public"."private_messages" FOR SELECT TO "authenticated" USING ((("from_user_id" = "auth"."uid"()) OR ("to_user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "private_messages_update_receiver_or_admin" ON "public"."private_messages" FOR UPDATE TO "authenticated" USING ((("to_user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("to_user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "private_messages_update_recipient" ON "public"."private_messages" FOR UPDATE TO "authenticated" USING (("to_user_id" = "auth"."uid"())) WITH CHECK (("to_user_id" = "auth"."uid"()));
+
+
+
+ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "profiles_admin_update_all" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))));
+
+
+
+CREATE POLICY "profiles_select_all" ON "public"."profiles" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "profiles_select_public" ON "public"."profiles" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "profiles_update_own" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("id" = "auth"."uid"())) WITH CHECK (("id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "profiles_update_self_or_admin" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((("id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"()))) WITH CHECK ((("id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+ALTER TABLE "public"."reseau_comments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "reseau_comments_delete_owner_or_admin" ON "public"."reseau_comments" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "reseau_comments_insert_validated" ON "public"."reseau_comments" FOR INSERT TO "authenticated" WITH CHECK ((("author_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "reseau_comments_select_all" ON "public"."reseau_comments" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "reseau_comments_update_owner_or_admin" ON "public"."reseau_comments" FOR UPDATE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."reseau_posts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "reseau_posts_delete_owner_or_admin" ON "public"."reseau_posts" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "reseau_posts_insert_validated" ON "public"."reseau_posts" FOR INSERT TO "authenticated" WITH CHECK ((("author_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "reseau_posts_select_all" ON "public"."reseau_posts" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "reseau_posts_update_like_validated" ON "public"."reseau_posts" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "p"
+  WHERE (("p"."id" = "auth"."uid"()) AND ("p"."is_validated" = true))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles" "p"
+  WHERE (("p"."id" = "auth"."uid"()) AND ("p"."is_validated" = true)))));
+
+
+
+CREATE POLICY "reseau_posts_update_owner_or_admin" ON "public"."reseau_posts" FOR UPDATE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+CREATE POLICY "reseau_posts_update_validated" ON "public"."reseau_posts" FOR UPDATE TO "authenticated" USING ("public"."is_validated"("auth"."uid"())) WITH CHECK ("public"."is_validated"("auth"."uid"()));
+
+
+
+ALTER TABLE "public"."tools" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "tools_delete_owner_or_admin" ON "public"."tools" FOR DELETE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR "public"."is_admin"("auth"."uid"())));
+
+
+
+CREATE POLICY "tools_insert_validated" ON "public"."tools" FOR INSERT TO "authenticated" WITH CHECK ((("author_id" = "auth"."uid"()) AND "public"."is_validated"("auth"."uid"())));
+
+
+
+CREATE POLICY "tools_select_all" ON "public"."tools" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+CREATE POLICY "tools_update_owner_or_admin" ON "public"."tools" FOR UPDATE TO "authenticated" USING ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true)))))) WITH CHECK ((("author_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."profiles" "me"
+  WHERE (("me"."id" = "auth"."uid"()) AND ("me"."role" = 'admin'::"text") AND ("me"."is_validated" = true))))));
+
+
+
+ALTER TABLE "public"."user_favorites" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "user_favorites_delete_own" ON "public"."user_favorites" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "user_favorites_insert_own" ON "public"."user_favorites" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "user_favorites_select_own" ON "public"."user_favorites" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "user_favorites_update_own" ON "public"."user_favorites" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+
+
+ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
+
+GRANT USAGE ON SCHEMA "public" TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "anon";
+GRANT USAGE ON SCHEMA "public" TO "authenticated";
+GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_admin"("uid" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_admin"("uid" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_admin"("uid" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_validated"("uid" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_validated"("uid" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_validated"("uid" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "anon";
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GRANT ALL ON TABLE "public"."activity_notifications" TO "anon";
+GRANT ALL ON TABLE "public"."activity_notifications" TO "authenticated";
+GRANT ALL ON TABLE "public"."activity_notifications" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."activity_notifications_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."activity_notifications_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."activity_notifications_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."blog_comments" TO "anon";
+GRANT ALL ON TABLE "public"."blog_comments" TO "authenticated";
+GRANT ALL ON TABLE "public"."blog_comments" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."blog_comments_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."blog_comments_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."blog_comments_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."blog_posts" TO "anon";
+GRANT ALL ON TABLE "public"."blog_posts" TO "authenticated";
+GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."blog_posts_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."blog_posts_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."blog_posts_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."message_reports" TO "anon";
+GRANT ALL ON TABLE "public"."message_reports" TO "authenticated";
+GRANT ALL ON TABLE "public"."message_reports" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."message_reports_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."message_reports_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."message_reports_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."messaging_blocks" TO "anon";
+GRANT ALL ON TABLE "public"."messaging_blocks" TO "authenticated";
+GRANT ALL ON TABLE "public"."messaging_blocks" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."messaging_blocks_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."messaging_blocks_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."messaging_blocks_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."private_messages" TO "anon";
+GRANT ALL ON TABLE "public"."private_messages" TO "authenticated";
+GRANT ALL ON TABLE "public"."private_messages" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."private_messages_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."private_messages_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."private_messages_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+GRANT SELECT ON TABLE "public"."profiles" TO "anon";
+GRANT SELECT ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("display_name") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("role") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("ime_status") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("job_title") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("avatar_url") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT UPDATE("is_validated") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."reseau_comments" TO "anon";
+GRANT ALL ON TABLE "public"."reseau_comments" TO "authenticated";
+GRANT ALL ON TABLE "public"."reseau_comments" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."reseau_comments_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."reseau_comments_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."reseau_comments_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."reseau_posts" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."reseau_posts" TO "authenticated";
+GRANT ALL ON TABLE "public"."reseau_posts" TO "service_role";
+
+
+
+GRANT UPDATE("likes_count") ON TABLE "public"."reseau_posts" TO "authenticated";
+
+
+
+GRANT ALL ON SEQUENCE "public"."reseau_posts_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."reseau_posts_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."reseau_posts_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."tools" TO "anon";
+GRANT ALL ON TABLE "public"."tools" TO "authenticated";
+GRANT ALL ON TABLE "public"."tools" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."tools_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."tools_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."tools_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."user_favorites" TO "anon";
+GRANT ALL ON TABLE "public"."user_favorites" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_favorites" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."user_favorites_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."user_favorites_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."user_favorites_id_seq" TO "service_role";
+
+
+
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
+
+
+
+
+
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
