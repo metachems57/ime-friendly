@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
+    <title>Ressources - IME-Friendly</title>
+    <link rel="stylesheet" href="style-ressources.css">
+    <link rel="stylesheet" href="style-messages.css">
+    <link rel="stylesheet" href="style-accessibility.css">
+</head>
+<body>
+    <header class="ressources-header">
+        <div class="header-nav">
+            <div class="header-left-links">
+                <div class="header-left-top">
+                    <a href="index.html" class="home-btn">🏠 Accueil</a>
+                    <a href="ressources.html" class="home-btn">📚 Ressources</a>
+                    <a href="contact.html" class="home-btn">✉️ Contact</a>
+                </div>
+                <div class="header-left-bottom">
+                    <a href="profil.html" class="home-btn">👤 Profil</a>
+                    <a href="messagerie.html" class="home-btn messages-link">📩 Messagerie <span class="messages-badge" data-messages-badge hidden>0</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="header-main">
+            <div class="header-title-stack">
+                <div class="nav-links">
+                    <a href="reseau.html" class="nav-link">💬 Réseau</a>
+                    <a href="outils.html" class="nav-link">🛠️ Outils</a>
+                    <a href="blog.html" class="nav-link">📝 Blog</a>
+                    <a href="teams.html" class="nav-link">👥 Vie de l'IME</a>
+                </div>
+                <h1>Ressources</h1>
+                <p>Des sites fiables pour vous informer, vous orienter et vous accompagner.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="ressources-main">
+        <section class="ressources-intro">
+            <h2>Sites d'aide</h2>
+            <p>
+                Cliquez sur une carte pour ouvrir le site dans un nouvel onglet.
+                Cette liste est synchronisee avec le carrousel de la page d'accueil.
+            </p>
+        </section>
+        <section id="resourcesGrid" class="resources-grid" aria-label="Liste des ressources utiles"></section>
+    </main>
+
+    <footer class="ressources-footer">
+        <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>
+    </footer>
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/supabase-sync.js"></script>
+    <script src="js/resources-data.js"></script>
+    <script src="js/ressources.js"></script>
+    <script src="js/activity-notifications.js"></script>
+    <script src="js/messages-widget.js"></script>
+    <script src="js/accessibility.js"></script>
+    <script src="js/pwa-init.js"></script>
+</body>
+</html>

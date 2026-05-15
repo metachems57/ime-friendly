@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1f5ea8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IME-Friendly">
+    <title>Ouverture - IME-Friendly</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-ouverture.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
+</head>
+<body class="is-native-app page-ouverture">
+    <div id="appNativeIntro" class="app-native-intro" aria-hidden="false">
+        <div class="app-native-intro-content">
+            <h2>IME-Friendly</h2>
+            <p>Renforcer les liens entre les parent et les IME</p>
+        </div>
+
+        <button id="appSwipeHint" class="app-native-swipe-hint" type="button" aria-label="Glisser pour ouvrir la connexion">
+            <span class="app-native-arrow">&#8593;</span>
+            <span>Glissez pour vous connecter</span>
+        </button>
+
+        <section id="appNativeAuthSheet" class="app-native-auth-sheet" aria-hidden="true">
+            <p class="app-native-brand-mini">IME-Friendly</p>
+            <h3>Connexion</h3>
+            <form id="appNativeLoginForm">
+                <input type="email" id="appNativeEmail" placeholder="Email" required>
+                <input type="password" id="appNativePassword" placeholder="Mot de passe" required>
+                <button type="submit">Se connecter</button>
+            </form>
+            <a href="index.html?fromOpen=1" id="appNativeSignupLink">Pas encore de compte ? Créez-en un !</a>
+            <a href="#" id="appNativeGuestLink">Accès en tant qu'invité (mode restreint)</a>
+        </section>
+    </div>
+
+    <script src="js/data-store.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ouverture.js"></script>
+</body>
+</html>

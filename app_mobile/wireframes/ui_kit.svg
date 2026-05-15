@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980">
+  <rect width="1600" height="980" fill="#F5F8FC"/>
+  <text x="60" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="700" fill="#142235">IME-Friendly Mobile UI Kit</text>
+
+  <text x="60" y="130" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Buttons</text>
+  <rect x="60" y="155" rx="14" ry="14" width="240" height="52" fill="#1F63B5"/>
+  <text x="180" y="188" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#FFFFFF">Primary</text>
+  <rect x="320" y="155" rx="14" ry="14" width="240" height="52" fill="#FFFFFF" stroke="#1F63B5" stroke-width="2"/>
+  <text x="440" y="188" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#1F63B5">Secondary</text>
+  <rect x="580" y="155" rx="26" ry="26" width="240" height="52" fill="#E7F0FD"/>
+  <text x="700" y="188" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#1F63B5">Soft pill</text>
+
+  <text x="60" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Inputs</text>
+  <rect x="60" y="285" rx="12" ry="12" width="380" height="56" fill="#FFFFFF" stroke="#D8E1EE"/>
+  <text x="80" y="320" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#4F627A">Email</text>
+  <rect x="60" y="357" rx="12" ry="12" width="380" height="56" fill="#FFFFFF" stroke="#D8E1EE"/>
+  <text x="80" y="392" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#4F627A">Mot de passe</text>
+
+  <text x="60" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Cards</text>
+  <rect x="60" y="495" rx="16" ry="16" width="450" height="180" fill="#FFFFFF" stroke="#D8E1EE"/>
+  <rect x="80" y="515" rx="10" ry="10" width="92" height="92" fill="#E7F0FD"/>
+  <text x="190" y="545" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#142235">Titre du post</text>
+  <text x="190" y="575" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Auteur • 07/05/2026</text>
+  <text x="80" y="640" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Description courte du contenu pour le feed.</text>
+
+  <text x="560" y="130" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Top bar</text>
+  <rect x="560" y="155" rx="16" ry="16" width="520" height="76" fill="#FFFFFF" stroke="#D8E1EE"/>
+  <text x="600" y="202" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#142235">IME-Friendly</text>
+  <circle cx="1030" cy="193" r="16" fill="#F05A7E"/>
+  <text x="1030" y="198" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#FFFFFF">3</text>
+
+  <text x="560" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Bottom nav</text>
+  <rect x="560" y="305" rx="18" ry="18" width="520" height="92" fill="#FFFFFF" stroke="#D8E1EE"/>
+  <text x="612" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#1F63B5">Accueil</text>
+  <text x="712" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Reseau</text>
+  <text x="812" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Outils</text>
+  <text x="912" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Blog</text>
+  <text x="1002" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#4F627A">Profil</text>
+
+  <text x="560" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#1F63B5">Status chips</text>
+  <rect x="560" y="495" rx="20" ry="20" width="130" height="40" fill="#E3F7F3"/>
+  <text x="625" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#1D9C88">Activite</text>
+  <rect x="700" y="495" rx="20" ry="20" width="130" height="40" fill="#E7F0FD"/>
+  <text x="765" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#1F63B5">Annonce</text>
+  <rect x="840" y="495" rx="20" ry="20" width="130" height="40" fill="#FFE9F0"/>
+  <text x="905" y="520" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#F05A7E">Education</text>
+</svg>
+

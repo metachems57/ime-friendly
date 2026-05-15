@@ -1,0 +1,26 @@
+{
+  "name": "IME-Friendly",
+  "short_name": "IME",
+  "description": "Renforcer les liens entre les parents et les IME.",
+  "lang": "fr",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f8ff",
+  "theme_color": "#1f5ea8",
+  "icons": [
+    {
+      "src": "images/pwa/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/pwa/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

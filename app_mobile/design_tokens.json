@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "project": "IME-Friendly Mobile",
+    "version": "0.1.0"
+  },
+  "colors": {
+    "primary": "#1F63B5",
+    "primarySoft": "#E7F0FD",
+    "secondary": "#1D9C88",
+    "secondarySoft": "#E3F7F3",
+    "accent": "#F05A7E",
+    "accentSoft": "#FFE9F0",
+    "warning": "#F6B93B",
+    "danger": "#E74C3C",
+    "surface": "#FFFFFF",
+    "background": "#F5F8FC",
+    "textPrimary": "#142235",
+    "textSecondary": "#4F627A",
+    "border": "#D8E1EE"
+  },
+  "typography": {
+    "fontFamily": "Inter, Segoe UI, Arial, sans-serif",
+    "h1": { "size": 28, "weight": 700, "lineHeight": 34 },
+    "h2": { "size": 22, "weight": 700, "lineHeight": 28 },
+    "h3": { "size": 18, "weight": 600, "lineHeight": 24 },
+    "body": { "size": 16, "weight": 400, "lineHeight": 24 },
+    "small": { "size": 14, "weight": 400, "lineHeight": 20 },
+    "label": { "size": 13, "weight": 600, "lineHeight": 18 }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "xxl": 32
+  },
+  "radius": {
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 20,
+    "pill": 999
+  },
+  "shadows": {
+    "card": "0 6px 20px rgba(20,34,53,0.08)",
+    "floating": "0 10px 30px rgba(20,34,53,0.12)"
+  }
+}
+

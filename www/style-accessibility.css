@@ -1,0 +1,478 @@
+:root {
+    --a11y-panel-bg: #ffffff;
+    --a11y-panel-border: #cfe0fb;
+    --a11y-panel-shadow: 0 12px 26px rgba(17, 52, 97, 0.2);
+    --a11y-primary: #1f5ea8;
+    --a11y-primary-strong: #184b84;
+    --a11y-focus-ring: #0b5bd3;
+    --a11y-focus-shadow: rgba(11, 91, 211, 0.28);
+    --pc-nav-btn-font-size: 0.97rem;
+    --pc-nav-btn-padding-y: 0.56rem;
+    --pc-nav-btn-padding-x: 1.06rem;
+    --pc-card-radius: 16px;
+    --pc-card-shadow: 0 10px 24px rgba(21, 59, 117, 0.1);
+}
+
+.a11y-toggle-btn {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 0.62rem 1.2rem;
+    cursor: pointer;
+    transition: 0.2s ease;
+    line-height: 1;
+}
+
+.a11y-toggle-btn:hover,
+.a11y-toggle-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.a11y-toggle-btn.a11y-toggle-btn--blog {
+    color: #000000;
+    background: rgba(255, 255, 255, 0.2);
+    border-color: transparent;
+}
+
+.a11y-toggle-btn.a11y-toggle-btn--blog:hover,
+.a11y-toggle-btn.a11y-toggle-btn--blog:focus-visible {
+    background: #4a5155;
+    border-color: #383e42;
+    color: #ffffff;
+}
+
+.a11y-toggle-btn.a11y-toggle-btn--reseau:hover,
+.a11y-toggle-btn.a11y-toggle-btn--reseau:focus-visible {
+    background: #ff4fa7;
+    border-color: #ff4fa7;
+    color: #ffffff;
+}
+
+.a11y-toggle-btn.a11y-toggle-btn--outils:hover,
+.a11y-toggle-btn.a11y-toggle-btn--outils:focus-visible {
+    background: #1e40af;
+    border-color: #1e40af;
+    color: #ffffff;
+}
+
+.a11y-panel {
+    position: fixed;
+    top: 78px;
+    right: 14px;
+    width: min(360px, calc(100vw - 20px));
+    border-radius: 14px;
+    border: 1px solid var(--a11y-panel-border);
+    background: var(--a11y-panel-bg);
+    box-shadow: var(--a11y-panel-shadow);
+    z-index: 1200;
+    overflow: hidden;
+}
+
+.a11y-panel[hidden] {
+    display: none;
+}
+
+.a11y-panel-header {
+    padding: 0.85rem 0.95rem;
+    background: linear-gradient(135deg, #1f5ea8, #2f7ed1);
+    color: #ffffff;
+}
+
+.a11y-panel-header h2 {
+    margin: 0;
+    font-size: 1.04rem;
+}
+
+.a11y-panel-header p {
+    margin: 0.18rem 0 0;
+    font-size: 0.84rem;
+    opacity: 0.96;
+}
+
+.a11y-panel-body {
+    padding: 0.9rem 0.95rem;
+    display: grid;
+    gap: 0.72rem;
+}
+
+.a11y-row {
+    display: grid;
+    gap: 0.34rem;
+}
+
+.a11y-row label {
+    color: #1f2d3d;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.a11y-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--a11y-primary);
+}
+
+.a11y-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border: 1px solid #d8e6fb;
+    border-radius: 10px;
+    padding: 0.44rem 0.56rem;
+    background: #f8fbff;
+}
+
+.a11y-switch span {
+    color: #1f2d3d;
+    font-size: 0.9rem;
+}
+
+.a11y-switch input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--a11y-primary);
+}
+
+.a11y-panel-footer {
+    padding: 0.8rem 0.95rem 0.95rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.a11y-panel-footer button {
+    border-radius: 10px;
+    padding: 0.66rem 1rem;
+    border: 1px solid #cddff8;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.a11y-reset-btn {
+    background: #f3f7ff;
+    color: #254770;
+}
+
+.a11y-close-btn {
+    background: var(--a11y-primary);
+    border-color: var(--a11y-primary);
+    color: #ffffff;
+}
+
+.a11y-close-btn:hover {
+    background: var(--a11y-primary-strong);
+}
+
+html.a11y-text-110 {
+    font-size: 110%;
+}
+
+html.a11y-text-120 {
+    font-size: 120%;
+}
+
+html.a11y-text-130 {
+    font-size: 130%;
+}
+
+html.a11y-spacious body,
+html.a11y-spacious p,
+html.a11y-spacious li,
+html.a11y-spacious label,
+html.a11y-spacious button,
+html.a11y-spacious input,
+html.a11y-spacious textarea,
+html.a11y-spacious select,
+html.a11y-spacious a,
+html.a11y-spacious span {
+    line-height: 1.8 !important;
+    letter-spacing: 0.02em !important;
+    word-spacing: 0.08em !important;
+}
+
+html.a11y-readable-font body,
+html.a11y-readable-font button,
+html.a11y-readable-font input,
+html.a11y-readable-font select,
+html.a11y-readable-font textarea,
+html.a11y-readable-font a {
+    font-family: Arial, Verdana, Tahoma, sans-serif !important;
+}
+
+html.a11y-high-contrast body {
+    filter: contrast(1.2) saturate(1.08);
+}
+
+html.a11y-high-contrast a,
+html.a11y-high-contrast button,
+html.a11y-high-contrast input,
+html.a11y-high-contrast select,
+html.a11y-high-contrast textarea {
+    text-shadow: none !important;
+}
+
+html.a11y-high-contrast *:focus-visible {
+    outline: 3px solid #ffd25a !important;
+    outline-offset: 2px !important;
+}
+
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+    outline: 3px solid var(--a11y-focus-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px var(--a11y-focus-shadow);
+}
+
+.header-nav .home-btn,
+.header-nav .nav-link,
+.header-nav .a11y-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    box-sizing: border-box;
+    height: 40px;
+    min-height: 40px;
+    padding: var(--pc-nav-btn-padding-y) var(--pc-nav-btn-padding-x) !important;
+    border-radius: 999px !important;
+    border-width: 1px !important;
+    font-size: var(--pc-nav-btn-font-size) !important;
+    font-weight: 600;
+    line-height: 1.2 !important;
+    white-space: nowrap;
+}
+
+/* Accueil: bouton Accessibilité aligné sur la largeur du bloc des 3 boutons */
+header .header-h1 > .a11y-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 400px;
+    margin: 0.45rem auto 0;
+    box-sizing: border-box;
+    font-weight: 800;
+}
+
+#homeNavBlock > .a11y-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: none;
+    height: 34px;
+    min-height: 34px;
+    margin: 0.45rem 0 0;
+    padding: 0 0.75rem !important;
+    box-sizing: border-box;
+    font-weight: 800;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid #ffffff;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: 0.3s ease;
+}
+
+#homeNavBlock > .a11y-toggle-btn:hover,
+#homeNavBlock > .a11y-toggle-btn:focus-visible {
+    background: #ffffff;
+    color: #007bff;
+    border-color: #ffffff;
+    transform: translateY(-1px);
+    outline: none;
+}
+
+@media (min-width: 981px) {
+    .service-card,
+    .resources-home-carousel,
+    .create-post,
+    .posts-feed,
+    .add-tool-section,
+    .tools-grid,
+    .tool-card,
+    .profile-details,
+    .user-posts,
+    .contact-card,
+    .ressources-intro,
+    .resource-page-card,
+    .panel,
+    .teams-intro,
+    .ime-live-section,
+    .team-block,
+    .home-agenda {
+        border-radius: var(--pc-card-radius);
+        box-shadow: var(--pc-card-shadow);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-nav .home-btn,
+    .header-nav .nav-link,
+    .a11y-toggle-btn {
+        height: 36px;
+        min-height: 36px;
+        width: auto;
+        padding: 0.5rem 0.88rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Header mobile harmonise sur toutes les pages (hors accueil) */
+    .header-nav {
+        flex-direction: column !important;
+        gap: 0.35rem !important;
+    }
+
+    .header-left-links {
+        margin-left: 0 !important;
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, max-content) !important;
+        grid-template-rows: auto auto !important;
+        justify-content: center !important;
+        align-items: center !important;
+        column-gap: 0.35rem !important;
+        row-gap: 0.28rem !important;
+    }
+
+    .header-left-top {
+        grid-column: 1 / 4 !important;
+        grid-row: 1 !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, max-content) !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        padding: 0.1rem 0.18rem !important;
+        border-radius: 999px !important;
+        background: rgba(255, 255, 255, 0.22) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .header-left-bottom {
+        grid-column: 1 / 4 !important;
+        grid-row: 2 !important;
+        width: auto !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, max-content) !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        padding: 0.1rem 0.18rem !important;
+        border-radius: 999px !important;
+        background: rgba(255, 255, 255, 0.22) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .header-left-links .home-btn,
+    .header-left-bottom > .a11y-toggle-btn,
+    .header-title-stack .nav-link {
+        width: auto !important;
+        min-width: 0 !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding-left: 0.82rem !important;
+        padding-right: 0.82rem !important;
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    .header-left-links > .a11y-toggle-btn,
+    .header-left-bottom > .a11y-toggle-btn {
+        margin: 0 !important;
+        border-radius: 999px !important;
+        font-weight: 700 !important;
+    }
+
+    .header-left-links .home-btn:hover,
+    .header-left-bottom > .a11y-toggle-btn:hover,
+    .header-left-bottom > .a11y-toggle-btn:focus-visible,
+    .header-title-stack .nav-link:hover {
+        transform: none !important;
+        color: #ffffff !important;
+        background: transparent !important;
+        border-color: transparent !important;
+    }
+
+    .header-title-stack .nav-links {
+        display: grid !important;
+        grid-template-columns: repeat(3, max-content) !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        margin-bottom: 0.12rem !important;
+        padding: 0.14rem 0.2rem !important;
+        border-radius: 999px !important;
+        background: rgba(255, 255, 255, 0.22) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        flex-wrap: nowrap !important;
+    }
+
+    /* Pages a 4 liens sur la ligne (Réseau, Outils, Blog, Vie de l'IME) */
+    .ressources-header .header-title-stack .nav-links,
+    .contact-header .header-title-stack .nav-links,
+    .messagerie-header .header-title-stack .nav-links,
+    .profil-header .header-title-stack .nav-links {
+        grid-template-columns: repeat(4, max-content) !important;
+        gap: 0.2rem !important;
+        margin-top: 0.18rem !important;
+        padding: 0.1rem 0.12rem !important;
+    }
+
+    .ressources-header .header-title-stack .nav-link,
+    .contact-header .header-title-stack .nav-link,
+    .messagerie-header .header-title-stack .nav-link,
+    .profil-header .header-title-stack .nav-link {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding-left: 0.56rem !important;
+        padding-right: 0.56rem !important;
+        font-size: 0.82rem !important;
+    }
+
+    header .header-h1 > .a11y-toggle-btn {
+        width: 80% !important;
+        max-width: 300px !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        margin: 0.2rem auto 0 !important;
+        padding: 0.26rem 0.8rem !important;
+        font-size: 0.8rem !important;
+        line-height: 1 !important;
+    }
+
+    .a11y-panel {
+        top: 10px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        overflow: auto;
+    }
+}

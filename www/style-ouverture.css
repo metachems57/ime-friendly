@@ -1,0 +1,31 @@
+body.page-ouverture {
+    min-height: 100vh;
+    margin: 0;
+}
+
+body.page-ouverture .app-native-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1.3rem 6.2rem;
+    background-image: linear-gradient(180deg, rgba(10, 44, 90, 0.18), rgba(10, 44, 90, 0.32)), url("images/fond page d'acceuil.png");
+    background-size: cover;
+    background-position: center;
+    color: #ffffff;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+body.page-ouverture.app-native-auth-open .app-native-auth-sheet {
+    transform: translateY(0);
+}
+
+body.page-ouverture.app-native-auth-open .app-native-swipe-hint {
+    opacity: 0;
+    pointer-events: none;
+}

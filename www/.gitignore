@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+.codex
+supabase/.temp/
+*.log
+
+tokens.txt
