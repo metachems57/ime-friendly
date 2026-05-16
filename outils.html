@@ -17,6 +17,29 @@
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
 <body>
+    <div id="appNativeToolsChrome" class="app-native-tools-chrome" aria-hidden="true">
+        <div class="app-native-tools-topbar">
+            <button id="appNativeToolsMenuBtn" class="app-native-tools-menu-btn" type="button" aria-label="Ouvrir le menu">
+                <span></span><span></span><span></span>
+            </button>
+            <h2>🛠️ Outils Pratiques</h2>
+        </div>
+        <div id="appNativeToolsDrawerBackdrop" class="app-native-tools-drawer-backdrop" hidden></div>
+        <aside id="appNativeToolsDrawer" class="app-native-tools-drawer" aria-hidden="true">
+            <a href="index.html?fromApp=1">Accueil</a>
+            <a id="appNativeToolsProfileLink" href="profil.html">Profil</a>
+            <a id="appNativeToolsMessagesLink" href="messagerie.html">Messagerie</a>
+            <a href="reseau.html">Réseau</a>
+            <a href="outils.html" class="is-active">Outils</a>
+            <a href="blog.html">Blog</a>
+            <a href="teams.html">Vie de l'IME</a>
+            <button id="appNativeToolsAdminResetLink" type="button">Réinitialiser Mdp</button>
+            <a href="ressources.html">Ressources</a>
+            <a href="contact.html">Contacte</a>
+            <button id="appNativeToolsAccessibilityLink" type="button">Accessibilité</button>
+        </aside>
+    </div>
+
     <header class="header">
         <div class="header-nav">
             <div class="header-left-links">
@@ -44,7 +67,8 @@
         </div>
     </header>
     <main class="container">
-        <section class="add-tool-section">
+        <section class="add-tool-section" id="toolsCreatePanel">
+            <button id="appNativeToolsCloseCreateBtn" class="app-native-tools-close-create-btn" type="button" aria-label="Fermer la création d'outil">✕</button>
             <h2>➕ Ajouter un nouvel outil</h2>
             <form id="addToolForm" class="tool-form">
                 <div class="form-group">
@@ -71,6 +95,12 @@
             </section>
         </section>
     </main>
+
+    <div id="appNativeToolsBottomBar" class="app-native-tools-bottom-bar" aria-hidden="true">
+        <button id="appNativeToolsPublishBtn" class="native-tools-publish-btn" type="button">
+            Publier <span class="native-tools-plus-sign">+</span>
+        </button>
+    </div>
 
     <footer class="footer">
         <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>

@@ -439,6 +439,302 @@ input[type="file"]:hover {
     font-weight: 600;
 }
 
+.app-native-tools-chrome,
+.app-native-tools-bottom-bar,
+.app-native-tools-close-create-btn {
+    display: none;
+}
+
+/* ================= Mode App Native: Outils ================= */
+body.is-native-app .app-native-tools-chrome,
+body.is-native-app .app-native-tools-bottom-bar,
+body.is-native-app .app-native-tools-close-create-btn {
+    display: block;
+}
+
+body.is-native-app {
+    background: #eef3f8;
+}
+
+body.is-native-app .header,
+body.is-native-app .footer {
+    display: none;
+}
+
+body.is-native-app .container {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 3.4rem 0 4.2rem;
+    display: block;
+}
+
+body.is-native-app .app-native-tools-topbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 3.35rem;
+    z-index: 5500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #1a4f94 0%, #2f79cd 100%);
+    color: #ffffff;
+}
+
+body.is-native-app .app-native-tools-topbar h2 {
+    margin: 0;
+    font-size: 1.92rem;
+    line-height: 1;
+    font-weight: 800;
+}
+
+body.is-native-app .app-native-tools-menu-btn {
+    position: absolute;
+    top: 0.42rem;
+    left: 0.45rem;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-tools-menu-btn span {
+    width: 34px;
+    height: 3px;
+    border-radius: 2px;
+    background: #ffffff;
+}
+
+body.is-native-app .app-native-tools-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 54, 94, 0.25);
+    z-index: 5600;
+}
+
+body.is-native-app .app-native-tools-drawer {
+    position: fixed;
+    top: 0.7rem;
+    left: 0.38rem;
+    width: min(220px, 66vw);
+    border-radius: 32px;
+    background: #ffffff;
+    padding: 0.95rem 1rem;
+    box-shadow: 0 12px 24px rgba(10, 53, 104, 0.35);
+    transform: translateX(-120%);
+    transition: transform 0.22s ease;
+    z-index: 5610;
+}
+
+body.is-native-app.app-native-tools-drawer-open .app-native-tools-drawer {
+    transform: translateX(0);
+}
+
+body.is-native-app .app-native-tools-drawer a,
+body.is-native-app .app-native-tools-drawer button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(40, 118, 195, 0.7);
+    color: #1974d2;
+    font-size: 0.96rem;
+    line-height: 1.2;
+    padding: 0.54rem 0.2rem 0.4rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-tools-drawer a.is-active {
+    font-weight: 700;
+    border-bottom-width: 2px;
+}
+
+body.is-native-app .tools-feed-column {
+    gap: 0;
+}
+
+body.is-native-app .search-section {
+    margin: 0;
+    padding: 0.52rem 0.45rem;
+    background: #b9def0;
+}
+
+body.is-native-app .search-input {
+    width: 100%;
+    border-radius: 999px;
+    border: 2px solid #3e8cdc;
+    padding: 0.74rem 1rem;
+    text-align: left;
+    font-size: 0.98rem;
+    box-shadow: none;
+}
+
+body.is-native-app .tools-grid {
+    grid-template-columns: 1fr;
+    gap: 0.56rem;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+body.is-native-app .tool-card {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0 0 0.25rem;
+    background: #ffffff;
+}
+
+body.is-native-app .tool-link {
+    position: relative;
+    display: block;
+}
+
+body.is-native-app .tool-image {
+    width: 100%;
+    height: 56vh;
+    min-height: 290px;
+    max-height: 520px;
+    object-fit: cover;
+    border-radius: 0;
+    margin: 0;
+}
+
+body.is-native-app .tool-card h3 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.35rem 0.55rem 0.38rem;
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+    background: rgba(35, 42, 55, 0.4);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+body.is-native-app .tool-card > p {
+    display: none;
+}
+
+body.is-native-app .age {
+    margin: 0.42rem 0.45rem 0;
+}
+
+body.is-native-app .tool-actions {
+    margin: 0.32rem 0.45rem 0;
+}
+
+body.is-native-app .delete-btn {
+    top: 0.35rem;
+    right: 0.35rem;
+    color: #ffb3ab;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 0.2rem 0.45rem;
+    opacity: 1;
+}
+
+body.is-native-app .add-tool-section {
+    position: fixed;
+    inset: 3.35rem 0 4.2rem 0;
+    z-index: 5700;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    padding: 0.78rem;
+    background: #ffffff;
+    transform: translateX(103%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+body.is-native-app.app-native-tools-create-open .add-tool-section {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.is-native-app .app-native-tools-close-create-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(31, 94, 168, 0.1);
+    color: #1f5ea8;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.is-native-app .add-tool-section h2 {
+    margin: 0 2.2rem 0.8rem 0;
+    font-size: 1.65rem;
+}
+
+body.is-native-app .add-tool-section .tool-form {
+    gap: 0.75rem;
+}
+
+body.is-native-app .steps-container {
+    max-height: 52vh;
+    overflow-y: auto;
+    padding-right: 0.1rem;
+}
+
+body.is-native-app .app-native-tools-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4.2rem;
+    z-index: 5650;
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    background: linear-gradient(180deg, #515861 0%, #3f454e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.is-native-app .native-tools-publish-btn {
+    height: 100%;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+}
+
+body.is-native-app .native-tools-plus-sign {
+    font-size: 2.35rem;
+    line-height: 1;
+    vertical-align: middle;
+    margin-left: 0.2rem;
+}
+
 @media (max-width: 768px) {
     *,
     *::before,

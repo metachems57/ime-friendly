@@ -1,15 +1,143 @@
 const BLOG_POSTS_KEY = 'blogposts';
 let runtimeBlogPosts = [];
 let runtimeBlogPostsLoaded = false;
+let nativeBlogDrawerReady = false;
+
+function isNativeAppRuntime() {
+    try {
+        if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+            return window.Capacitor.isNativePlatform();
+        }
+    } catch (error) {
+        // ignore
+    }
+
+    const protocol = String(window.location.protocol || '');
+    return protocol === 'capacitor:' || protocol === 'file:';
+}
+
+function closeNativeBlogDrawer() {
+    document.body.classList.remove('app-native-blog-drawer-open');
+    const backdropNode = document.getElementById('appNativeBlogDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeBlogDrawer');
+    if (backdropNode) backdropNode.hidden = true;
+    if (drawerNode) drawerNode.setAttribute('aria-hidden', 'true');
+}
+
+function openNativeBlogDrawer() {
+    document.body.classList.add('app-native-blog-drawer-open');
+    const backdropNode = document.getElementById('appNativeBlogDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeBlogDrawer');
+    if (backdropNode) backdropNode.hidden = false;
+    if (drawerNode) drawerNode.setAttribute('aria-hidden', 'false');
+}
+
+function openNativeBlogCreatePanel() {
+    if (!isNativeAppRuntime()) return;
+    document.body.classList.add('app-native-blog-create-open');
+}
+
+function closeNativeBlogCreatePanel() {
+    if (!isNativeAppRuntime()) return;
+    document.body.classList.remove('app-native-blog-create-open');
+}
+
+function updateNativeBlogDrawerLinks() {
+    const profileNode = document.getElementById('appNativeBlogProfileLink');
+    const resetNode = document.getElementById('appNativeBlogAdminResetLink');
+    const user = getConnectedUser();
+
+    if (profileNode) {
+        const userName = user && user.name ? String(user.name).trim() : '';
+        profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+    }
+
+    if (resetNode) {
+        resetNode.style.display = isAdminUser() ? 'block' : 'none';
+    }
+}
+
+function initNativeBlogExperience() {
+    if (!isNativeAppRuntime()) return;
+    document.body.classList.add('is-native-app');
+    updateNativeBlogDrawerLinks();
+
+    if (nativeBlogDrawerReady) return;
+    nativeBlogDrawerReady = true;
+
+    const menuBtnNode = document.getElementById('appNativeBlogMenuBtn');
+    const backdropNode = document.getElementById('appNativeBlogDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeBlogDrawer');
+    const publishBtnNode = document.getElementById('appNativeBlogPublishBtn');
+    const closeCreateBtn = document.getElementById('appNativeBlogCloseCreateBtn');
+    const accessibilityNode = document.getElementById('appNativeBlogAccessibilityLink');
+    const adminResetNode = document.getElementById('appNativeBlogAdminResetLink');
+
+    if (menuBtnNode) {
+        menuBtnNode.addEventListener('click', () => {
+            if (document.body.classList.contains('app-native-blog-drawer-open')) {
+                closeNativeBlogDrawer();
+            } else {
+                openNativeBlogDrawer();
+            }
+        });
+    }
+
+    if (backdropNode) {
+        backdropNode.addEventListener('click', closeNativeBlogDrawer);
+    }
+
+    if (drawerNode) {
+        drawerNode.querySelectorAll('a').forEach((linkNode) => {
+            linkNode.addEventListener('click', () => {
+                closeNativeBlogDrawer();
+            });
+        });
+    }
+
+    if (publishBtnNode) {
+        publishBtnNode.addEventListener('click', () => {
+            if (!isUserLoggedIn()) {
+                alert("Mode invité: connectez-vous pour publier.");
+                return;
+            }
+            closeNativeBlogDrawer();
+            openNativeBlogCreatePanel();
+        });
+    }
+
+    if (closeCreateBtn) {
+        closeCreateBtn.addEventListener('click', closeNativeBlogCreatePanel);
+    }
+
+    if (accessibilityNode) {
+        accessibilityNode.addEventListener('click', () => {
+            closeNativeBlogDrawer();
+            const toggleNode = document.getElementById('a11yToggleBtn');
+            if (toggleNode) toggleNode.click();
+        });
+    }
+
+    if (adminResetNode) {
+        adminResetNode.addEventListener('click', () => {
+            closeNativeBlogDrawer();
+            if (isAdminUser() && typeof window.showAdminResetPassword === 'function') {
+                window.showAdminResetPassword();
+            }
+        });
+    }
+}
 
     // =========================================================================
     // CONTRÔLE DE L'ÉTAT DE L'UTILISATEUR ET DE LA SÉCURITÉ
     // =========================================================================
 document.addEventListener('DOMContentLoaded', async function() {
+    initNativeBlogExperience();
     applyGuestRestrictions();
     initEventDateFieldVisibility();
     initSearchControls();
     await loadPosts();
+    updateNativeBlogDrawerLinks();
 });
 
 function getConnectedUser() {
@@ -782,6 +910,8 @@ function highlightPostsFromUrl() {
 }
 
 function applyGuestRestrictions() {
+    const nativePublishBtn = document.getElementById('appNativeBlogPublishBtn');
+
     if (isUserLoggedIn()) return;
 
     const postForm = document.getElementById('postForm');
@@ -800,6 +930,11 @@ function applyGuestRestrictions() {
         notice.style.fontWeight = '700';
         notice.style.color = '#7a3f00';
         createSection.appendChild(notice);
+    }
+
+    if (nativePublishBtn) {
+        nativePublishBtn.disabled = true;
+        nativePublishBtn.style.opacity = '0.6';
     }
 }
 
@@ -1195,6 +1330,7 @@ async function deletePost(postId) {
             await loadPosts();
             this.reset();
             updateEventDateFieldVisibility();
+            if (isNativeAppRuntime()) closeNativeBlogCreatePanel();
             return;
         }
 
@@ -1210,4 +1346,5 @@ async function deletePost(postId) {
         
         this.reset();
         updateEventDateFieldVisibility();
+        if (isNativeAppRuntime()) closeNativeBlogCreatePanel();
     });

@@ -2,6 +2,136 @@
         const toolsKey = 'tools';
         let runtimeTools = [];
         let runtimeToolsLoaded = false;
+        let nativeToolsDrawerReady = false;
+
+        function isNativeAppRuntime() {
+            try {
+                if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+                    return window.Capacitor.isNativePlatform();
+                }
+            } catch (error) {
+                // ignore
+            }
+
+            const protocol = String(window.location.protocol || '');
+            return protocol === 'capacitor:' || protocol === 'file:';
+        }
+
+        function closeNativeToolsDrawer() {
+            document.body.classList.remove('app-native-tools-drawer-open');
+            const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+            const drawerNode = document.getElementById('appNativeToolsDrawer');
+            if (backdropNode) backdropNode.hidden = true;
+            if (drawerNode) drawerNode.setAttribute('aria-hidden', 'true');
+        }
+
+        function openNativeToolsDrawer() {
+            document.body.classList.add('app-native-tools-drawer-open');
+            const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+            const drawerNode = document.getElementById('appNativeToolsDrawer');
+            if (backdropNode) backdropNode.hidden = false;
+            if (drawerNode) drawerNode.setAttribute('aria-hidden', 'false');
+        }
+
+        function openNativeToolsCreatePanel() {
+            if (!isNativeAppRuntime()) return;
+            document.body.classList.add('app-native-tools-create-open');
+        }
+
+        function closeNativeToolsCreatePanel() {
+            if (!isNativeAppRuntime()) return;
+            document.body.classList.remove('app-native-tools-create-open');
+        }
+
+        function updateNativeToolsDrawerLinks() {
+            const profileNode = document.getElementById('appNativeToolsProfileLink');
+            const resetNode = document.getElementById('appNativeToolsAdminResetLink');
+            const user = getConnectedUser();
+            const isAdmin = window.auth && typeof window.auth.isAdmin === 'function'
+                ? window.auth.isAdmin()
+                : String(user?.role || '').trim().toLowerCase() === 'admin';
+
+            if (profileNode) {
+                const userName = user && user.name ? String(user.name).trim() : '';
+                profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+            }
+
+            if (resetNode) {
+                resetNode.style.display = isAdmin ? 'block' : 'none';
+            }
+        }
+
+        function initNativeToolsExperience() {
+            if (!isNativeAppRuntime()) return;
+            document.body.classList.add('is-native-app');
+            updateNativeToolsDrawerLinks();
+
+            if (nativeToolsDrawerReady) return;
+            nativeToolsDrawerReady = true;
+
+            const menuBtnNode = document.getElementById('appNativeToolsMenuBtn');
+            const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+            const drawerNode = document.getElementById('appNativeToolsDrawer');
+            const publishBtnNode = document.getElementById('appNativeToolsPublishBtn');
+            const closeCreateBtn = document.getElementById('appNativeToolsCloseCreateBtn');
+            const accessibilityNode = document.getElementById('appNativeToolsAccessibilityLink');
+            const adminResetNode = document.getElementById('appNativeToolsAdminResetLink');
+
+            if (menuBtnNode) {
+                menuBtnNode.addEventListener('click', () => {
+                    if (document.body.classList.contains('app-native-tools-drawer-open')) {
+                        closeNativeToolsDrawer();
+                    } else {
+                        openNativeToolsDrawer();
+                    }
+                });
+            }
+
+            if (backdropNode) {
+                backdropNode.addEventListener('click', closeNativeToolsDrawer);
+            }
+
+            if (drawerNode) {
+                drawerNode.querySelectorAll('a').forEach((linkNode) => {
+                    linkNode.addEventListener('click', () => {
+                        closeNativeToolsDrawer();
+                    });
+                });
+            }
+
+            if (publishBtnNode) {
+                publishBtnNode.addEventListener('click', () => {
+                    if (!isUserLoggedIn()) {
+                        alert("Mode invité: connectez-vous pour publier.");
+                        return;
+                    }
+                    closeNativeToolsDrawer();
+                    openNativeToolsCreatePanel();
+                });
+            }
+
+            if (closeCreateBtn) {
+                closeCreateBtn.addEventListener('click', closeNativeToolsCreatePanel);
+            }
+
+            if (accessibilityNode) {
+                accessibilityNode.addEventListener('click', () => {
+                    closeNativeToolsDrawer();
+                    const toggleNode = document.getElementById('a11yToggleBtn');
+                    if (toggleNode) toggleNode.click();
+                });
+            }
+
+            if (adminResetNode) {
+                adminResetNode.addEventListener('click', () => {
+                    closeNativeToolsDrawer();
+                    const canReset = window.auth && typeof window.auth.isAdmin === 'function' && window.auth.isAdmin();
+                    if (canReset && typeof window.showAdminResetPassword === 'function') {
+                        window.showAdminResetPassword();
+                    }
+                });
+            }
+        }
 
         function getConnectedUser() {
             if (window.auth && typeof window.auth.getCurrentUser === 'function') {
@@ -280,6 +410,7 @@
         document.getElementById('add-step-btn').addEventListener('click', addStep);
 
         function applyGuestRestrictions() {
+            const nativePublishBtn = document.getElementById('appNativeToolsPublishBtn');
             if (isUserLoggedIn()) return;
 
             const addToolSection = document.querySelector('.add-tool-section');
@@ -304,6 +435,11 @@
                 notice.style.fontWeight = '700';
                 notice.style.color = '#7a3f00';
                 addToolSection.appendChild(notice);
+            }
+
+            if (nativePublishBtn) {
+                nativePublishBtn.disabled = true;
+                nativePublishBtn.style.opacity = '0.6';
             }
         }
 
@@ -398,6 +534,9 @@
                 const stepsContainer = document.getElementById('steps-container');
                 stepsContainer.innerHTML = ''; // Nettoie les étapes
                 addStep(); // Ajoute une nouvelle étape vide
+                if (isNativeAppRuntime()) {
+                    closeNativeToolsCreatePanel();
+                }
             } catch (error) {
                 console.error("Erreur lors du traitement des images:", error);
                 if (isQuotaExceededError(error)) {
@@ -681,6 +820,7 @@
         }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    initNativeToolsExperience();
     applyGuestRestrictions();
 
     let savedTools = readTools();
@@ -707,4 +847,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             card.style.display = (title.includes(query) || age.includes(query)) ? '' : 'none';
         });
     });
+
+    updateNativeToolsDrawerLinks();
 });

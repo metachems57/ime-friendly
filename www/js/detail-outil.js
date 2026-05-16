@@ -1,5 +1,125 @@
 const toolsKey = 'tools';
 let currentDisplayedTool = null;
+let nativeDetailToolsDrawerReady = false;
+
+function isNativeAppRuntime() {
+    try {
+        if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+            return window.Capacitor.isNativePlatform();
+        }
+    } catch (error) {
+        // ignore
+    }
+
+    const protocol = String(window.location.protocol || '');
+    return protocol === 'capacitor:' || protocol === 'file:';
+}
+
+function closeNativeToolsDrawer() {
+    document.body.classList.remove('app-native-tools-drawer-open');
+    const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeToolsDrawer');
+    if (backdropNode) backdropNode.hidden = true;
+    if (drawerNode) drawerNode.setAttribute('aria-hidden', 'true');
+}
+
+function openNativeToolsDrawer() {
+    document.body.classList.add('app-native-tools-drawer-open');
+    const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeToolsDrawer');
+    if (backdropNode) backdropNode.hidden = false;
+    if (drawerNode) drawerNode.setAttribute('aria-hidden', 'false');
+}
+
+function getConnectedUser() {
+    if (window.auth && typeof window.auth.getCurrentUser === 'function') {
+        const authUser = window.auth.getCurrentUser();
+        if (authUser) return authUser;
+    }
+
+    const isConnected = localStorage.getItem('imeConnected') === 'true';
+    if (!isConnected) return null;
+
+    return {
+        name: localStorage.getItem('userName') || '',
+        role: localStorage.getItem('userRole') || '',
+        email: localStorage.getItem('userEmail') || ''
+    };
+}
+
+function updateNativeToolsDrawerLinks() {
+    const profileNode = document.getElementById('appNativeToolsProfileLink');
+    const resetNode = document.getElementById('appNativeToolsAdminResetLink');
+    const user = getConnectedUser();
+    const isAdmin = window.auth && typeof window.auth.isAdmin === 'function'
+        ? window.auth.isAdmin()
+        : String(user?.role || '').trim().toLowerCase() === 'admin';
+
+    if (profileNode) {
+        const userName = user && user.name ? String(user.name).trim() : '';
+        profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+    }
+
+    if (resetNode) {
+        resetNode.style.display = isAdmin ? 'block' : 'none';
+    }
+}
+
+function initNativeToolsExperience() {
+    if (!isNativeAppRuntime()) return;
+    document.body.classList.add('is-native-app');
+    updateNativeToolsDrawerLinks();
+
+    if (nativeDetailToolsDrawerReady) return;
+    nativeDetailToolsDrawerReady = true;
+
+    const menuBtnNode = document.getElementById('appNativeToolsMenuBtn');
+    const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
+    const drawerNode = document.getElementById('appNativeToolsDrawer');
+    const accessibilityNode = document.getElementById('appNativeToolsAccessibilityLink');
+    const adminResetNode = document.getElementById('appNativeToolsAdminResetLink');
+
+    if (menuBtnNode) {
+        menuBtnNode.addEventListener('click', () => {
+            if (document.body.classList.contains('app-native-tools-drawer-open')) {
+                closeNativeToolsDrawer();
+            } else {
+                openNativeToolsDrawer();
+            }
+        });
+    }
+
+    if (backdropNode) {
+        backdropNode.addEventListener('click', closeNativeToolsDrawer);
+    }
+
+    if (drawerNode) {
+        drawerNode.querySelectorAll('a').forEach((linkNode) => {
+            linkNode.addEventListener('click', () => {
+                closeNativeToolsDrawer();
+            });
+        });
+    }
+
+    if (accessibilityNode) {
+        accessibilityNode.addEventListener('click', () => {
+            closeNativeToolsDrawer();
+            const toggleNode = document.getElementById('a11yToggleBtn');
+            if (toggleNode) toggleNode.click();
+        });
+    }
+
+    if (adminResetNode) {
+        adminResetNode.addEventListener('click', () => {
+            closeNativeToolsDrawer();
+            if (window.auth && typeof window.auth.isAdmin === 'function' && window.auth.isAdmin()) {
+                if (typeof window.showAdminResetPassword === 'function') {
+                    window.showAdminResetPassword();
+                }
+            }
+        });
+    }
+}
 
 function readTools() {
     if (window.dataStore && typeof window.dataStore.readArray === 'function') {
@@ -323,6 +443,8 @@ function renderTool(tool) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    initNativeToolsExperience();
+
     const toolId = getToolIdFromUrl();
 
     if (!toolId) {
@@ -353,4 +475,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     renderTool(tool);
     initToolActions(tool);
+    updateNativeToolsDrawerLinks();
 });

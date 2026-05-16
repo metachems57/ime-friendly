@@ -17,6 +17,29 @@
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
 <body>
+    <div id="appNativeBlogChrome" class="app-native-blog-chrome" aria-hidden="true">
+        <div class="app-native-blog-topbar">
+            <button id="appNativeBlogMenuBtn" class="app-native-blog-menu-btn" type="button" aria-label="Ouvrir le menu">
+                <span></span><span></span><span></span>
+            </button>
+            <h2>💬 Questions &amp; Sujets</h2>
+        </div>
+        <div id="appNativeBlogDrawerBackdrop" class="app-native-blog-drawer-backdrop" hidden></div>
+        <aside id="appNativeBlogDrawer" class="app-native-blog-drawer" aria-hidden="true">
+            <a href="index.html?fromApp=1">Accueil</a>
+            <a id="appNativeBlogProfileLink" href="profil.html">Profil</a>
+            <a id="appNativeBlogMessagesLink" href="messagerie.html">Messagerie</a>
+            <a href="reseau.html">Réseau</a>
+            <a href="outils.html">Outils</a>
+            <a href="blog.html" class="is-active">Blog</a>
+            <a href="teams.html">Vie de l'IME</a>
+            <button id="appNativeBlogAdminResetLink" type="button">Réinitialiser Mdp</button>
+            <a href="ressources.html">Ressources</a>
+            <a href="contact.html">Contacte</a>
+            <button id="appNativeBlogAccessibilityLink" type="button">Accessibilité</button>
+        </aside>
+    </div>
+
     <header class="header">
         <div class="header-nav">
             <div class="header-left-links">
@@ -45,7 +68,8 @@
     </header>
 
     <main class="container">
-        <section class="create-post">
+        <section class="create-post" id="blogCreatePanel">
+            <button id="appNativeBlogCloseCreateBtn" class="app-native-blog-close-create-btn" type="button" aria-label="Fermer la création de sujet">✕</button>
             <h2>📝 Nouvelle question/sujet</h2>
             <form id="postForm">
                 <select id="postCategory" required>
@@ -96,6 +120,12 @@
             </section>
         </section>
     </main>
+
+    <div id="appNativeBlogBottomBar" class="app-native-blog-bottom-bar" aria-hidden="true">
+        <button id="appNativeBlogPublishBtn" class="native-blog-publish-btn" type="button">
+            Publier <span class="native-blog-plus-sign">+</span>
+        </button>
+    </div>
 
     <footer class="footer">
         <p>&copy; 2026 IME-Friendly - Tous droits réservés</p>

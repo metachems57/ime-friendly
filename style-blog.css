@@ -583,6 +583,303 @@ body {
     font-weight: 600;
 }
 
+.app-native-blog-chrome,
+.app-native-blog-bottom-bar,
+.app-native-blog-close-create-btn {
+    display: none;
+}
+
+/* ================= Mode App Native: Blog ================= */
+body.is-native-app .app-native-blog-chrome,
+body.is-native-app .app-native-blog-bottom-bar,
+body.is-native-app .app-native-blog-close-create-btn {
+    display: block;
+}
+
+body.is-native-app {
+    background: #eef3f8;
+}
+
+body.is-native-app .header,
+body.is-native-app .footer {
+    display: none;
+}
+
+body.is-native-app .container {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 3.95rem 0 4.25rem;
+    display: block;
+}
+
+body.is-native-app .app-native-blog-topbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 3.35rem;
+    z-index: 5500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #686f79 0%, #8a919c 100%);
+    color: #ffffff;
+}
+
+body.is-native-app .app-native-blog-topbar h2 {
+    margin: 0;
+    font-size: 1.95rem;
+    line-height: 1;
+    font-weight: 800;
+}
+
+body.is-native-app .app-native-blog-menu-btn {
+    position: absolute;
+    top: 0.42rem;
+    left: 0.45rem;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-blog-menu-btn span {
+    width: 34px;
+    height: 3px;
+    border-radius: 2px;
+    background: #ffffff;
+}
+
+body.is-native-app .app-native-blog-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 54, 94, 0.25);
+    z-index: 5600;
+}
+
+body.is-native-app .app-native-blog-drawer {
+    position: fixed;
+    top: 0.7rem;
+    left: 0.38rem;
+    width: min(220px, 66vw);
+    border-radius: 32px;
+    background: #ffffff;
+    padding: 0.95rem 1rem;
+    box-shadow: 0 12px 24px rgba(10, 53, 104, 0.35);
+    transform: translateX(-120%);
+    transition: transform 0.22s ease;
+    z-index: 5610;
+}
+
+body.is-native-app.app-native-blog-drawer-open .app-native-blog-drawer {
+    transform: translateX(0);
+}
+
+body.is-native-app .app-native-blog-drawer a,
+body.is-native-app .app-native-blog-drawer button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(40, 118, 195, 0.7);
+    color: #1974d2;
+    font-size: 0.96rem;
+    line-height: 1.2;
+    padding: 0.54rem 0.2rem 0.4rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-blog-drawer a.is-active {
+    font-weight: 700;
+    border-bottom-width: 2px;
+}
+
+body.is-native-app .blog-feed-column {
+    gap: 0.5rem;
+}
+
+body.is-native-app .search-posts {
+    margin: 0;
+    padding: 0.4rem 0.3rem 0.15rem;
+}
+
+body.is-native-app .search-posts-controls {
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.4rem;
+}
+
+body.is-native-app .search-field label {
+    font-size: 0.78rem;
+    color: #4b5668;
+}
+
+body.is-native-app .search-field select,
+body.is-native-app .search-field input,
+body.is-native-app .search-reset-btn {
+    border-radius: 10px;
+    padding: 0.52rem 0.6rem;
+    font-size: 0.86rem;
+}
+
+body.is-native-app .search-reset-btn {
+    height: 38px;
+    align-self: end;
+}
+
+body.is-native-app .blog-posts-panel {
+    border: 0;
+    border-top: 1px solid #cfd8e3;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0.5rem 0.18rem 0.2rem;
+    background: transparent;
+}
+
+body.is-native-app .blog-feed-title {
+    margin: 0 0.35rem 0.45rem;
+    font-size: 1.6rem;
+    color: #374151;
+}
+
+body.is-native-app .posts-container {
+    gap: 0.6rem;
+}
+
+body.is-native-app .post {
+    border-width: 2px;
+    border-radius: 12px;
+    padding: 0.65rem;
+    box-shadow: 0 3px 10px rgba(15, 38, 77, 0.1);
+}
+
+body.is-native-app .post-header h3 {
+    font-size: 1.15rem;
+}
+
+body.is-native-app .post-content {
+    margin-top: 0.55rem;
+    font-size: 0.98rem;
+}
+
+body.is-native-app .post-event-date {
+    margin-top: 0.5rem;
+}
+
+body.is-native-app .comments-section {
+    margin-top: 0.5rem;
+    padding-top: 0.45rem;
+}
+
+body.is-native-app .comment-item {
+    padding: 0.45rem 0.55rem;
+}
+
+body.is-native-app .create-post {
+    position: fixed;
+    inset: 3.35rem 0 4.2rem 0;
+    z-index: 5700;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    padding: 0.78rem;
+    background: #ffffff;
+    transform: translateX(103%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.24s ease, opacity 0.24s ease;
+}
+
+body.is-native-app.app-native-blog-create-open .create-post {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.is-native-app .app-native-blog-close-create-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(31, 94, 168, 0.1);
+    color: #1f5ea8;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.is-native-app .create-post h2 {
+    margin: 0 2.2rem 0.8rem 0;
+    font-size: 1.95rem;
+    color: #30343b;
+}
+
+body.is-native-app #postForm {
+    gap: 0.6rem;
+}
+
+body.is-native-app #postForm input,
+body.is-native-app #postForm textarea,
+body.is-native-app #postForm select {
+    border-radius: 12px;
+    padding: 0.72rem 0.8rem;
+}
+
+body.is-native-app #postForm textarea {
+    min-height: 210px;
+}
+
+body.is-native-app #postForm button[type='submit'] {
+    border-radius: 12px;
+    padding: 0.7rem 1.15rem;
+    font-size: 1rem;
+}
+
+body.is-native-app .app-native-blog-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4.2rem;
+    z-index: 5650;
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    background: linear-gradient(180deg, #515861 0%, #3f454e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.is-native-app .native-blog-publish-btn {
+    height: 100%;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+}
+
+body.is-native-app .native-blog-plus-sign {
+    font-size: 2.35rem;
+    line-height: 1;
+    vertical-align: middle;
+    margin-left: 0.2rem;
+}
+
 @media (max-width: 768px) {
     .header {
         height: auto;
