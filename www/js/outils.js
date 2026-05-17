@@ -475,6 +475,55 @@
             return '';
         }
 
+        function isDataImageUrl(value) {
+            return String(value || '').trim().startsWith('data:image/');
+        }
+
+        async function uploadToolImageIfNeeded(imageValue) {
+            const value = String(imageValue || '').trim();
+            if (!value || !isDataImageUrl(value)) return value;
+
+            if (!window.supabaseStorage || typeof window.supabaseStorage.uploadDataUrl !== 'function') {
+                return value;
+            }
+
+            const uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
+                bucket: 'tools-media',
+                folder: 'steps',
+                fileNamePrefix: 'tool-step'
+            });
+
+            if (!uploadResult.ok) {
+                console.warn('Upload image outil échoué, fallback local/base64.', uploadResult.reason || uploadResult.error || 'unknown');
+                return value;
+            }
+
+            return String(uploadResult.url || '').trim() || value;
+        }
+
+        async function normalizeToolStepsForStorage(steps) {
+            const safeSteps = Array.isArray(steps) ? steps : [];
+            const normalized = [];
+
+            for (const step of safeSteps) {
+                const description = String(step?.description || '').trim();
+                const rawImages = Array.isArray(step?.images) ? step.images : [];
+                const uploadedImages = [];
+
+                for (const imageValue of rawImages) {
+                    const nextImage = await uploadToolImageIfNeeded(imageValue);
+                    if (nextImage) uploadedImages.push(nextImage);
+                }
+
+                normalized.push({
+                    description,
+                    images: uploadedImages
+                });
+            }
+
+            return normalized;
+        }
+
         function getSupabaseClient() {
             if (!window.supabaseClient || typeof window.supabaseClient.getClient !== 'function') {
                 return null;
@@ -901,11 +950,13 @@
                 const authorId = await getCurrentSupabaseUserId();
                 if (!supabase || !authorId) return null;
 
+                const normalizedSteps = await normalizeToolStepsForStorage(newTool?.steps);
+
                 const payload = {
                     author_id: authorId,
                     name: String(newTool?.name || '').trim(),
                     age: String(newTool?.age || '').trim(),
-                    steps_json: Array.isArray(newTool?.steps) ? newTool.steps : []
+                    steps_json: normalizedSteps
                 };
 
                 const { data, error } = await supabase
@@ -921,6 +972,7 @@
 
                 const savedTool = {
                     ...newTool,
+                    steps: normalizedSteps,
                     id: Number(data?.id) || Date.now(),
                     createdAt: data?.created_at || new Date().toISOString(),
                     authorId: authorId

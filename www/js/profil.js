@@ -768,11 +768,27 @@ function initPhotoEditor(profileUser, profileName, isOwnProfile) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                let finalPhotoValue = resizedDataUrl;
+
+                if (isSupabaseReady() && isOwnProfile && window.supabaseStorage && typeof window.supabaseStorage.uploadDataUrl === 'function') {
+                    const uploadResult = await window.supabaseStorage.uploadDataUrl(resizedDataUrl, {
+                        bucket: 'profile-photos',
+                        folder: 'avatars',
+                        fileNamePrefix: 'avatar'
+                    });
+
+                    if (!uploadResult.ok) {
+                        alert("Impossible d'envoyer la photo sur le stockage serveur.");
+                        return;
+                    }
+
+                    finalPhotoValue = String(uploadResult.url || '').trim() || resizedDataUrl;
+                }
 
                 if (isSupabaseReady() && isOwnProfile) {
                     const remoteResult = await updateProfilePhotoInSupabase(
                         profileUser,
-                        resizedDataUrl,
+                        finalPhotoValue,
                         profileName,
                         readValue('userEmail', '')
                     );
@@ -785,8 +801,8 @@ function initPhotoEditor(profileUser, profileName, isOwnProfile) {
                     profileUser.supabaseId = remoteResult.profileId || profileUser.supabaseId;
                 }
 
-                profilePhoto.src = resizedDataUrl;
-                saveProfilePhoto(profileUser, profileName, resizedDataUrl);
+                profilePhoto.src = finalPhotoValue;
+                saveProfilePhoto(profileUser, profileName, finalPhotoValue);
 
                 if (window.supabaseSync && typeof window.supabaseSync.syncUsers === 'function') {
                     try {

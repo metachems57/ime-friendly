@@ -491,6 +491,32 @@ function sanitizeImageSrc(src) {
     return '';
 }
 
+function isDataImageUrl(value) {
+    return String(value || '').trim().startsWith('data:image/');
+}
+
+async function uploadReseauImageIfNeeded(imageValue) {
+    const value = String(imageValue || '').trim();
+    if (!value || !isDataImageUrl(value)) return value;
+
+    if (!window.supabaseStorage || typeof window.supabaseStorage.uploadDataUrl !== 'function') {
+        return value;
+    }
+
+    const uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
+        bucket: 'reseau-media',
+        folder: 'posts',
+        fileNamePrefix: 'reseau-post'
+    });
+
+    if (!uploadResult.ok) {
+        console.warn('Upload image réseau échoué, fallback local/base64.', uploadResult.reason || uploadResult.error || 'unknown');
+        return value;
+    }
+
+    return String(uploadResult.url || '').trim() || value;
+}
+
 function getHighlightPostIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const rawId = params.get('highlightPost');
@@ -731,11 +757,12 @@ async function saveNewPost(postData) {
         const authorId = await getCurrentSupabaseUserId();
         if (!supabase || !authorId) return false;
 
+        const imageData = await uploadReseauImageIfNeeded(postData?.image);
         const payload = {
             author_id: authorId,
             title: String(postData?.title || '').trim(),
             content: String(postData?.content || '').trim(),
-            image_data: String(postData?.image || '').trim(),
+            image_data: String(imageData || '').trim(),
             likes_count: 0
         };
 
