@@ -1,4 +1,6 @@
 (function () {
+    let nativeBackBridgeReady = false;
+
     function isNativeAppRuntime() {
         try {
             if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
@@ -12,68 +14,14 @@
         return protocol === 'capacitor:' || protocol === 'file:';
     }
 
-    function getCurrentPageKey() {
-        const path = String(window.location.pathname || '');
-        const page = path.split('/').pop() || 'index.html';
-        return `${page}${window.location.search || ''}${window.location.hash || ''}`;
-    }
-
     function getCurrentPageName() {
         const path = String(window.location.pathname || '');
-        return path.split('/').pop() || 'index.html';
+        return (path.split('/').pop() || 'index.html').toLowerCase();
     }
 
-    function readNativeStack() {
-        try {
-            const parsed = JSON.parse(sessionStorage.getItem('imeNativeNavStack') || '[]');
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            return [];
-        }
-    }
-
-    function writeNativeStack(stack) {
-        try {
-            sessionStorage.setItem('imeNativeNavStack', JSON.stringify(Array.isArray(stack) ? stack : []));
-        } catch (error) {
-            // ignore
-        }
-    }
-
-    function syncCurrentPageInNativeStack() {
-        if (!isNativeAppRuntime()) return;
-
-        const current = getCurrentPageKey();
-        let stack = readNativeStack();
-        const last = stack[stack.length - 1];
-
-        if (last === current) return;
-
-        const previous = stack[stack.length - 2];
-        if (previous === current) {
-            stack.pop();
-            writeNativeStack(stack);
-            return;
-        }
-
-        const existingIndex = stack.lastIndexOf(current);
-        if (existingIndex >= 0) {
-            stack = stack.slice(0, existingIndex + 1);
-            writeNativeStack(stack);
-            return;
-        }
-
-        stack.push(current);
-        if (stack.length > 40) {
-            stack = stack.slice(stack.length - 40);
-        }
-        writeNativeStack(stack);
-    }
-
-    function initNativeBackNavigation() {
-        if (!isNativeAppRuntime()) return;
-
-        syncCurrentPageInNativeStack();
+    function initNativeBackBridge() {
+        if (!isNativeAppRuntime() || nativeBackBridgeReady) return;
+        nativeBackBridgeReady = true;
 
         const appPlugin = window.Capacitor && window.Capacitor.Plugins
             ? window.Capacitor.Plugins.App
@@ -83,26 +31,17 @@
             return;
         }
 
+        // Règle globale demandée:
+        // retour téléphone = retour navigateur (page précédente).
         appPlugin.addListener('backButton', () => {
-            const pageName = getCurrentPageName().toLowerCase();
-            let stack = readNativeStack();
-
-            if (stack.length > 1) {
-                stack.pop();
-                const previousPage = stack[stack.length - 1];
-                writeNativeStack(stack);
-                window.location.href = previousPage;
+            if (window.history.length > 1) {
+                window.history.back();
                 return;
             }
 
-            if (pageName === 'detail-outil.html') {
-                writeNativeStack(['outils.html?fromApp=1']);
-                window.location.href = 'outils.html?fromApp=1';
-                return;
-            }
-
+            // Fallback si aucune page précédente dans l'historique.
+            const pageName = getCurrentPageName();
             if (pageName !== 'index.html' && pageName !== 'ouverture.html') {
-                writeNativeStack(['index.html?fromApp=1']);
                 window.location.href = 'index.html?fromApp=1';
                 return;
             }
@@ -113,16 +52,16 @@
         });
     }
 
-    if (!('serviceWorker' in navigator)) {
-        initNativeBackNavigation();
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js').catch((error) => {
+                console.warn('Service worker non enregistre:', error);
+            });
+
+            initNativeBackBridge();
+        });
         return;
     }
 
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js').catch((error) => {
-            console.warn('Service worker non enregistre:', error);
-        });
-
-        initNativeBackNavigation();
-    });
+    initNativeBackBridge();
 })();

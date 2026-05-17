@@ -320,6 +320,38 @@ header.header {
     background: rgba(255, 255, 255, 0.28);
 }
 
+body.is-native-app main {
+    padding-top: 4rem !important;
+}
+
+body.is-native-app .app-native-shell-topbar {
+    height: 3.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.12rem;
+}
+
+body.is-native-app .app-native-shell-topbar h2 {
+    margin: 0;
+    font-size: 1.52rem;
+    line-height: 1;
+    font-weight: 800;
+}
+
+body.is-native-app .app-native-shell-topbar-subtitle {
+    margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+body.is-native-app .app-native-shell-menu-btn {
+    top: 0.34rem;
+}
+
 #profile-function-title {
     text-align: center;
     margin: 0.15rem auto 0;

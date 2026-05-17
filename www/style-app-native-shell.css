@@ -1,0 +1,179 @@
+.app-native-shell-chrome {
+    display: none;
+}
+
+body.is-native-app .app-native-shell-chrome {
+    display: block;
+}
+
+body.is-native-app header {
+    display: none !important;
+}
+
+body.is-native-app footer {
+    display: none !important;
+}
+
+body.is-native-app main {
+    padding-top: 3.45rem !important;
+}
+
+body.is-native-app .app-native-shell-topbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 3.35rem;
+    z-index: 6400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #1a4f94 0%, #2f79cd 100%);
+    color: #ffffff;
+}
+
+body.is-native-app .app-native-shell-topbar h2 {
+    margin: 0;
+    font-size: 1.88rem;
+    line-height: 1;
+    font-weight: 800;
+}
+
+body.is-native-app .app-native-shell-menu-btn {
+    position: absolute;
+    top: 0.42rem;
+    left: 0.45rem;
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-shell-menu-btn span {
+    width: 34px;
+    height: 3px;
+    border-radius: 2px;
+    background: #ffffff;
+}
+
+body.is-native-app .app-native-shell-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 54, 94, 0.25);
+    z-index: 6410;
+}
+
+body.is-native-app .app-native-shell-drawer {
+    position: fixed;
+    top: 0.7rem;
+    left: 0.38rem;
+    width: min(220px, 66vw);
+    border-radius: 32px;
+    background: #ffffff;
+    padding: 0.95rem 1rem;
+    box-shadow: 0 12px 24px rgba(10, 53, 104, 0.35);
+    transform: translateX(-120%);
+    transition: transform 0.22s ease;
+    z-index: 6420;
+}
+
+body.is-native-app.app-native-shell-drawer-open .app-native-shell-drawer {
+    transform: translateX(0);
+}
+
+body.is-native-app .app-native-shell-drawer a,
+body.is-native-app .app-native-shell-drawer button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(40, 118, 195, 0.7);
+    color: #1974d2;
+    font-size: 0.96rem;
+    line-height: 1.2;
+    padding: 0.54rem 0.2rem 0.4rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-shell-drawer a.is-active,
+body.is-native-app .app-native-shell-drawer button.is-active {
+    font-weight: 700;
+    border-bottom-width: 2px;
+}
+
+body.is-native-app .app-native-admin-reset-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 34, 63, 0.42);
+    z-index: 6600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+body.is-native-app .app-native-admin-reset-modal[hidden] {
+    display: none !important;
+}
+
+body.is-native-app .app-native-admin-reset-card {
+    width: min(430px, 94vw);
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #d9e7fb;
+    box-shadow: 0 16px 34px rgba(14, 56, 110, 0.3);
+    padding: 1rem;
+    position: relative;
+}
+
+body.is-native-app .app-native-admin-reset-card h3 {
+    margin: 0 0 0.85rem;
+    color: #1f5ea8;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+body.is-native-app .app-native-admin-reset-close {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.4rem;
+    border: 0;
+    background: transparent;
+    font-size: 1.45rem;
+    color: #3c4f67;
+    cursor: pointer;
+}
+
+body.is-native-app #appNativeAdminResetForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+body.is-native-app #appNativeAdminResetForm input {
+    border: 1px solid #b7d6f5;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.98rem;
+    box-sizing: border-box;
+}
+
+body.is-native-app #appNativeAdminResetForm button[type="submit"] {
+    margin-top: 0.1rem;
+    border: 0;
+    border-radius: 10px;
+    padding: 0.62rem 0.9rem;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, #1f5ea8, #2f7ed1);
+}

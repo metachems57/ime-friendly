@@ -151,6 +151,19 @@ function getProfileRoleDisplay(user) {
     return formatRole(normalizedRole);
 }
 
+function updateNativeProfileTopbarMeta(profileName, profileUser) {
+    const subtitleNode = document.getElementById('appNativeProfileSubtitle');
+    if (!subtitleNode) return;
+
+    const safeName = normalize(profileName) || 'Profil';
+    const professionalTitle = normalizeProfessionalTitle(profileUser?.professionalTitle);
+    const roleLabel = getProfileRoleDisplay(profileUser);
+    const metaLabel = professionalTitle || roleLabel || 'Membre';
+
+    subtitleNode.textContent = `${safeName} • ${metaLabel}`;
+    subtitleNode.hidden = false;
+}
+
 function formatDate(dateValue) {
     if (!dateValue) return 'Inconnue';
     const date = new Date(dateValue);
@@ -916,7 +929,8 @@ function initAdminHelpSection(profileUser) {
 
 function initAdminManagementButton(profileUser, isOwnProfile, isConnected, currentUserEmail = '') {
     const adminManagementBtn = document.getElementById('adminManagementBtn');
-    if (!adminManagementBtn) return;
+    const adminResetPasswordBtn = document.getElementById('adminResetPasswordBtn');
+    if (!adminManagementBtn && !adminResetPasswordBtn) return;
 
     let isAdminSession = false;
     if (window.auth && typeof window.auth.isAdmin === 'function') {
@@ -929,8 +943,26 @@ function initAdminManagementButton(profileUser, isOwnProfile, isConnected, curre
     const ownProfileByEmail = isSameIdentityByEmail(profileUser?.email, currentUserEmail);
     const canShow = !!(isConnected && isAdminSession && profileIsAdmin && (isOwnProfile || ownProfileByEmail));
 
-    adminManagementBtn.hidden = !canShow;
-    adminManagementBtn.style.display = canShow ? 'inline-flex' : 'none';
+    if (adminManagementBtn) {
+        adminManagementBtn.hidden = !canShow;
+        adminManagementBtn.style.display = canShow ? 'inline-flex' : 'none';
+    }
+
+    if (adminResetPasswordBtn) {
+        const canShowReset = canShow && typeof window.showAdminResetPassword === 'function';
+        adminResetPasswordBtn.hidden = !canShowReset;
+        adminResetPasswordBtn.style.display = canShowReset ? 'inline-flex' : 'none';
+        if (canShow && !adminResetPasswordBtn.dataset.bound) {
+            adminResetPasswordBtn.dataset.bound = '1';
+            adminResetPasswordBtn.addEventListener('click', () => {
+                if (typeof window.showAdminResetPassword === 'function') {
+                    window.showAdminResetPassword();
+                    return;
+                }
+                alert("La bulle de réinitialisation n'est pas disponible.");
+            });
+        }
+    }
 }
 
 function initImeStatusEditor(profileUser, profileName, isOwnProfile) {
@@ -997,6 +1029,7 @@ function initImeStatusEditor(profileUser, profileName, isOwnProfile) {
         if (roleNode) {
             roleNode.textContent = getProfileRoleDisplay(profileUser);
         }
+        updateNativeProfileTopbarMeta(profileName, profileUser);
 
         if (window.supabaseSync && typeof window.supabaseSync.syncUsers === 'function') {
             try {
@@ -1070,6 +1103,7 @@ function initProfessionalTitleEditor(profileUser, profileName, isOwnProfile) {
             : 'Fonction : non renseignée';
 
         profileUser.professionalTitle = nextTitle;
+        updateNativeProfileTopbarMeta(profileName, profileUser);
 
         if (window.supabaseSync && typeof window.supabaseSync.syncUsers === 'function') {
             try {
@@ -1178,6 +1212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (profileLastLoginNode) profileLastLoginNode.textContent = 'Connexion requise';
         if (profileImeStatusNode) profileImeStatusNode.textContent = 'Connexion requise';
         if (postsContainer) postsContainer.textContent = 'Aucune activité à afficher.';
+        updateNativeProfileTopbarMeta('Profil invité', { role: 'parent' });
         initPhotoEditor(null, '', false);
         initMessagingActions('', false, isConnected);
         return;
@@ -1204,6 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (profileNameNode) profileNameNode.textContent = displayName;
     if (profileRoleNode) profileRoleNode.textContent = getProfileRoleDisplay(profileUser);
+    updateNativeProfileTopbarMeta(displayName, profileUser);
     if (profileEmailRow) {
         profileEmailRow.hidden = !isOwnProfile;
     }

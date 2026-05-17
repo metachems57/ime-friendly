@@ -130,11 +130,23 @@ function updateNativeDrawerLinks() {
     if (!isNativeAppRuntime()) return;
     const user = getConnectedUser();
     const profileNode = document.getElementById('appNativeDrawerProfile');
+    const messagesNode = document.getElementById('appNativeDrawerMessages');
+    const logoutNode = document.getElementById('appNativeLogoutLink');
     const resetNode = document.getElementById('appNativeAdminResetLink');
+    const isLogged = !!user;
 
     if (profileNode) {
         const userName = user ? user.name : '';
         profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+        profileNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (messagesNode) {
+        messagesNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (logoutNode) {
+        logoutNode.style.display = isLogged ? 'block' : 'none';
     }
 
     if (resetNode) {
@@ -165,6 +177,7 @@ function initNativeHomeChrome() {
     const drawerNode = document.getElementById('appNativeDrawer');
     const adminResetNode = document.getElementById('appNativeAdminResetLink');
     const accessibilityNode = document.getElementById('appNativeAccessibilityLink');
+    const logoutNode = document.getElementById('appNativeLogoutLink');
 
     if (chromeNode) chromeNode.setAttribute('aria-hidden', 'false');
     if (menuBtnNode) {
@@ -203,6 +216,13 @@ function initNativeHomeChrome() {
             closeNativeDrawer();
             const toggleNode = document.getElementById('a11yToggleBtn');
             if (toggleNode) toggleNode.click();
+        });
+    }
+
+    if (logoutNode) {
+        logoutNode.addEventListener('click', () => {
+            closeNativeDrawer();
+            logout();
         });
     }
 

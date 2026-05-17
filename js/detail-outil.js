@@ -49,20 +49,46 @@ function getConnectedUser() {
 
 function updateNativeToolsDrawerLinks() {
     const profileNode = document.getElementById('appNativeToolsProfileLink');
+    const messagesNode = document.getElementById('appNativeToolsMessagesLink');
+    const logoutNode = document.getElementById('appNativeToolsLogoutBtn');
     const resetNode = document.getElementById('appNativeToolsAdminResetLink');
     const user = getConnectedUser();
     const isAdmin = window.auth && typeof window.auth.isAdmin === 'function'
         ? window.auth.isAdmin()
         : String(user?.role || '').trim().toLowerCase() === 'admin';
+    const isLogged = !!user;
 
     if (profileNode) {
         const userName = user && user.name ? String(user.name).trim() : '';
         profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+        profileNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (messagesNode) {
+        messagesNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (logoutNode) {
+        logoutNode.style.display = isLogged ? 'block' : 'none';
     }
 
     if (resetNode) {
         resetNode.style.display = isAdmin ? 'block' : 'none';
     }
+}
+
+function logoutFromNativeToolsDrawer() {
+    if (window.auth && typeof window.auth.logout === 'function') {
+        window.auth.logout();
+    } else {
+        localStorage.removeItem('imeConnected');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+    }
+
+    localStorage.setItem('imeGuestMode', 'false');
+    window.location.href = 'ouverture.html';
 }
 
 function initNativeToolsExperience() {
@@ -78,6 +104,7 @@ function initNativeToolsExperience() {
     const drawerNode = document.getElementById('appNativeToolsDrawer');
     const accessibilityNode = document.getElementById('appNativeToolsAccessibilityLink');
     const adminResetNode = document.getElementById('appNativeToolsAdminResetLink');
+    const logoutNode = document.getElementById('appNativeToolsLogoutBtn');
 
     if (menuBtnNode) {
         menuBtnNode.addEventListener('click', () => {
@@ -117,6 +144,13 @@ function initNativeToolsExperience() {
                     window.showAdminResetPassword();
                 }
             }
+        });
+    }
+
+    if (logoutNode) {
+        logoutNode.addEventListener('click', () => {
+            closeNativeToolsDrawer();
+            logoutFromNativeToolsDrawer();
         });
     }
 }

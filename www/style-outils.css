@@ -465,32 +465,42 @@ body.is-native-app .container {
     max-width: none;
     width: 100%;
     margin: 0;
-    padding: 3.4rem 0 4.2rem;
+    padding: 4.25rem 0 4.2rem;
     display: block;
 }
 
 body.is-native-app .app-native-tools-topbar {
     position: fixed;
     inset: 0 0 auto 0;
-    height: 3.35rem;
+    height: 4.05rem;
     z-index: 5500;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.1rem;
     background: linear-gradient(180deg, #1a4f94 0%, #2f79cd 100%);
     color: #ffffff;
 }
 
 body.is-native-app .app-native-tools-topbar h2 {
     margin: 0;
-    font-size: 1.92rem;
+    font-size: 1.6rem;
     line-height: 1;
     font-weight: 800;
 }
 
+body.is-native-app .app-native-tools-subtitle {
+    margin: 0;
+    font-size: 0.66rem;
+    line-height: 1.1;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.96);
+}
+
 body.is-native-app .app-native-tools-menu-btn {
     position: absolute;
-    top: 0.42rem;
+    top: 0.4rem;
     left: 0.45rem;
     width: 42px;
     height: 42px;
@@ -710,19 +720,19 @@ body.is-native-app .app-native-tools-bottom-bar {
     height: 4.2rem;
     z-index: 5650;
     border-top: 1px solid rgba(255, 255, 255, 0.35);
-    background: linear-gradient(180deg, #515861 0%, #3f454e 100%);
-    display: flex;
+    background: linear-gradient(180deg, #1a4f94 0%, #2f79cd 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     align-items: center;
-    justify-content: center;
 }
 
 body.is-native-app .native-tools-publish-btn {
     height: 100%;
-    width: 100%;
     border: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.34);
     background: transparent;
     color: #ffffff;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 600;
     letter-spacing: 0.01em;
     cursor: pointer;
@@ -733,6 +743,130 @@ body.is-native-app .native-tools-plus-sign {
     line-height: 1;
     vertical-align: middle;
     margin-left: 0.2rem;
+}
+
+body.is-native-app .native-tools-camera-btn {
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 2.05rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-tools-camera-launcher,
+body.is-native-app .app-native-tools-step-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 5800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.9rem;
+    box-sizing: border-box;
+    background: rgba(7, 28, 56, 0.5);
+}
+
+body.is-native-app .app-native-tools-camera-launcher[hidden],
+body.is-native-app .app-native-tools-step-modal[hidden] {
+    display: none !important;
+}
+
+body.is-native-app .app-native-tools-camera-launcher-card,
+body.is-native-app .app-native-tools-step-card {
+    width: min(480px, 94vw);
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #dbe7fb;
+    box-shadow: 0 14px 32px rgba(8, 37, 75, 0.28);
+    padding: 0.95rem;
+    position: relative;
+}
+
+body.is-native-app .app-native-tools-camera-launcher-quit {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.4rem;
+    border: 0;
+    background: transparent;
+    color: #315274;
+    font-size: 1.35rem;
+    cursor: pointer;
+}
+
+body.is-native-app .app-native-tools-camera-launcher-card h3,
+body.is-native-app .app-native-tools-step-card h3 {
+    margin: 0 0 0.5rem;
+    color: #1a4f94;
+    font-size: 1.15rem;
+    text-align: center;
+}
+
+body.is-native-app .app-native-tools-camera-launcher-card p {
+    margin: 0 0 0.8rem;
+    text-align: center;
+    color: #48617f;
+}
+
+body.is-native-app .app-native-tools-camera-open-btn {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1f5ea8, #2f7ed1);
+    cursor: pointer;
+}
+
+body.is-native-app #appNativeToolsStepImagePreview {
+    display: block;
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid #d4e5fb;
+    margin-bottom: 0.65rem;
+}
+
+body.is-native-app #appNativeToolsStepText {
+    width: 100%;
+    min-height: 96px;
+    border: 1px solid #bcd8fa;
+    border-radius: 12px;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.95rem;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+body.is-native-app .app-native-tools-step-actions {
+    margin-top: 0.65rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+}
+
+body.is-native-app .app-native-tools-step-actions button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+body.is-native-app #appNativeToolsStepValidateBtn {
+    background: linear-gradient(135deg, #0b8f4f, #15a55f);
+}
+
+body.is-native-app #appNativeToolsStepAddBtn {
+    background: linear-gradient(135deg, #1f5ea8, #2f7ed1);
+}
+
+body.is-native-app #appNativeToolsStepRetryBtn {
+    background: linear-gradient(135deg, #8c98ab, #6f7a8c);
 }
 
 @media (max-width: 768px) {

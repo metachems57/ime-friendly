@@ -11,11 +11,36 @@
     <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://formspree.io https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'self'">
     <title>Contact - IME-Friendly</title>
+    <link rel="stylesheet" href="style-app-native-shell.css">
     <link rel="stylesheet" href="style-contact.css">
     <link rel="stylesheet" href="style-messages.css">
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
 <body>
+    <div id="appNativeShell" class="app-native-shell-chrome" aria-hidden="true">
+        <div class="app-native-shell-topbar">
+            <button id="appNativeShellMenuBtn" class="app-native-shell-menu-btn" type="button" aria-label="Ouvrir le menu">
+                <span></span><span></span><span></span>
+            </button>
+            <h2>Contact</h2>
+        </div>
+        <div id="appNativeShellDrawerBackdrop" class="app-native-shell-drawer-backdrop" hidden></div>
+        <aside id="appNativeShellDrawer" class="app-native-shell-drawer" aria-hidden="true">
+            <a href="index.html?fromApp=1">Accueil</a>
+            <a id="appNativeShellProfileLink" href="profil.html">Profil</a>
+            <a id="appNativeShellMessagesLink" href="messagerie.html">Messagerie</a>
+            <button id="appNativeShellLogoutBtn" type="button">Se déconnecter</button>
+            <a href="reseau.html">Réseau</a>
+            <a href="outils.html">Outils</a>
+            <a href="blog.html">Blog</a>
+            <a href="teams.html">Vie de l'IME</a>
+            <a href="ressources.html">Ressources</a>
+            <a href="contact.html" class="is-active">Contacte</a>
+            <button id="appNativeShellAdminResetLink" type="button">Réinitialiser Mdp</button>
+            <button id="appNativeShellAccessibilityLink" type="button">Accessibilité</button>
+        </aside>
+    </div>
+
     <header class="contact-header">
         <div class="header-nav">
             <div class="header-left-links">
@@ -79,6 +104,7 @@
     <script src="js/activity-notifications.js"></script>
     <script src="js/messages-widget.js"></script>
     <script src="js/accessibility.js"></script>
+    <script src="js/app-native-shell.js"></script>
     <script src="js/pwa-init.js"></script>
     <script src="js/contact.js"></script>
 </body>

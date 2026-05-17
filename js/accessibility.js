@@ -16,6 +16,19 @@
         reduceMotion: false
     };
 
+    function isNativeAppRuntime() {
+        try {
+            if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+                return window.Capacitor.isNativePlatform();
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        const protocol = String(window.location.protocol || '');
+        return protocol === 'capacitor:' || protocol === 'file:';
+    }
+
     function normalizeTextScale(value) {
         const allowed = [100, 110, 120, 130];
         const parsed = Number(value);
@@ -78,6 +91,10 @@
     }
 
     function resolveHeaderTarget() {
+        if (isNativeAppRuntime()) {
+            return document.body;
+        }
+
         const reseauLeftLinks = document.querySelector('.header-nav .header-left-links');
         if (reseauLeftLinks) {
             const reseauLeftBottom = document.querySelector('.header-nav .header-left-bottom');
@@ -118,6 +135,12 @@
         toggleButton.textContent = 'Accessibilité';
         toggleButton.setAttribute('aria-haspopup', 'dialog');
         toggleButton.setAttribute('aria-expanded', 'false');
+
+        if (isNativeAppRuntime()) {
+            toggleButton.classList.add('a11y-toggle-btn--native-anchor');
+            toggleButton.setAttribute('aria-hidden', 'true');
+            toggleButton.tabIndex = -1;
+        }
 
         if (window.location.pathname.endsWith('/blog.html') || window.location.pathname.endsWith('blog.html')) {
             toggleButton.classList.add('a11y-toggle-btn--blog');
@@ -205,6 +228,13 @@
         }
 
         function positionPanelNearToggle() {
+            if (isNativeAppRuntime()) {
+                panel.style.right = 'auto';
+                panel.style.left = '10px';
+                panel.style.top = '66px';
+                return;
+            }
+
             const gap = 8;
             const viewportMargin = 10;
             const toggleRect = toggleButton.getBoundingClientRect();
@@ -241,6 +271,22 @@
             panel.hidden = true;
             toggleButton.setAttribute('aria-expanded', 'false');
         }
+
+        window.imeAccessibilityPanel = {
+            open() {
+                openPanel();
+            },
+            close() {
+                closePanel();
+            },
+            toggle() {
+                if (panel.hidden) {
+                    openPanel();
+                } else {
+                    closePanel();
+                }
+            }
+        };
 
         toggleButton.addEventListener('click', () => {
             if (panel.hidden) {
@@ -284,6 +330,9 @@
 
         document.addEventListener('click', (event) => {
             if (panel.hidden) return;
+            if (event.target && event.target.closest && event.target.closest('#appNativeShellAccessibilityLink')) {
+                return;
+            }
             const clickedInsidePanel = panel.contains(event.target);
             const clickedToggle = toggleButton.contains(event.target);
             if (!clickedInsidePanel && !clickedToggle) {

@@ -534,7 +534,7 @@ body.is-native-app .teams-main {
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: 5.2rem 0.35rem 1rem;
+    padding: 5.6rem 0.35rem 1rem;
 }
 
 body.is-native-app .app-native-teams-topbar {
@@ -542,25 +542,36 @@ body.is-native-app .app-native-teams-topbar {
     left: 0;
     top: 0;
     width: 100%;
-    height: 4.3rem;
+    height: 4.75rem;
     background: #56b7e7;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.12rem;
     z-index: 5000;
 }
 
 body.is-native-app .app-native-teams-topbar h2 {
     color: #123f80;
-    font-size: 2.15rem;
+    margin: 0;
+    font-size: 1.95rem;
     line-height: 1;
     font-weight: 700;
+}
+
+body.is-native-app .app-native-teams-subtitle {
+    margin: 0;
+    font-size: 0.69rem;
+    line-height: 1.12;
+    font-weight: 700;
+    color: rgba(18, 63, 128, 0.95);
 }
 
 body.is-native-app .app-native-teams-menu-btn {
     position: absolute;
     left: 0.62rem;
-    top: 0.8rem;
+    top: 0.66rem;
     width: 46px;
     height: 46px;
     border: 0;

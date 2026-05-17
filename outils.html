@@ -23,12 +23,14 @@
                 <span></span><span></span><span></span>
             </button>
             <h2>🛠️ Outils Pratiques</h2>
+            <p class="app-native-tools-subtitle">Ressources éducatives à reproduire à la maison</p>
         </div>
         <div id="appNativeToolsDrawerBackdrop" class="app-native-tools-drawer-backdrop" hidden></div>
         <aside id="appNativeToolsDrawer" class="app-native-tools-drawer" aria-hidden="true">
             <a href="index.html?fromApp=1">Accueil</a>
             <a id="appNativeToolsProfileLink" href="profil.html">Profil</a>
             <a id="appNativeToolsMessagesLink" href="messagerie.html">Messagerie</a>
+            <button id="appNativeToolsLogoutBtn" type="button">Se déconnecter</button>
             <a href="reseau.html">Réseau</a>
             <a href="outils.html" class="is-active">Outils</a>
             <a href="blog.html">Blog</a>
@@ -100,6 +102,33 @@
         <button id="appNativeToolsPublishBtn" class="native-tools-publish-btn" type="button">
             Publier <span class="native-tools-plus-sign">+</span>
         </button>
+        <button id="appNativeToolsCameraBtn" class="native-tools-camera-btn" type="button" aria-label="Créer un outil avec l'appareil photo">
+            📸
+        </button>
+    </div>
+
+    <input id="appNativeToolsCameraInput" type="file" accept="image/*" capture="environment" hidden>
+
+    <div id="appNativeToolsCameraLauncher" class="app-native-tools-camera-launcher" hidden>
+        <div class="app-native-tools-camera-launcher-card">
+            <button id="appNativeToolsCameraLauncherQuit" class="app-native-tools-camera-launcher-quit" type="button" aria-label="Quitter la création">✕</button>
+            <h3 id="appNativeToolsCameraLauncherTitle">Étape 1</h3>
+            <p>Prenez la photo de cette étape.</p>
+            <button id="appNativeToolsOpenCameraNowBtn" class="app-native-tools-camera-open-btn" type="button">Ouvrir l'appareil photo</button>
+        </div>
+    </div>
+
+    <div id="appNativeToolsStepModal" class="app-native-tools-step-modal" hidden>
+        <div class="app-native-tools-step-card">
+            <h3 id="appNativeToolsStepTitle">Étape 1</h3>
+            <img id="appNativeToolsStepImagePreview" alt="Aperçu de l'étape">
+            <textarea id="appNativeToolsStepText" placeholder="Décrivez cette étape..." required></textarea>
+            <div class="app-native-tools-step-actions">
+                <button id="appNativeToolsStepValidateBtn" type="button">Valider l'outil</button>
+                <button id="appNativeToolsStepAddBtn" type="button">Ajouter une étape</button>
+                <button id="appNativeToolsStepRetryBtn" type="button">Annuler</button>
+            </div>
+        </div>
     </div>
 
     <footer class="footer">

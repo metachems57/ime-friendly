@@ -69,12 +69,26 @@
     border: 1px solid var(--a11y-panel-border);
     background: var(--a11y-panel-bg);
     box-shadow: var(--a11y-panel-shadow);
-    z-index: 1200;
+    z-index: 7000;
     overflow: hidden;
 }
 
 .a11y-panel[hidden] {
     display: none;
+}
+
+.a11y-toggle-btn--native-anchor {
+    position: fixed !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    left: -9999px !important;
+    top: -9999px !important;
 }
 
 .a11y-panel-header {

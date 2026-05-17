@@ -42,17 +42,43 @@ function isCurrentUserAdmin() {
 
 function updateNativeTeamsDrawerLinks() {
     const profileNode = document.getElementById('appNativeDrawerProfile');
+    const messagesNode = document.getElementById('appNativeDrawerMessages');
+    const logoutNode = document.getElementById('appNativeTeamsLogoutBtn');
     const resetNode = document.getElementById('appNativeTeamsAdminResetLink');
     const user = getCurrentConnectedUser();
+    const isLogged = !!user;
 
     if (profileNode) {
         const userName = user && user.name ? String(user.name).trim() : '';
         profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+        profileNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (messagesNode) {
+        messagesNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (logoutNode) {
+        logoutNode.style.display = isLogged ? 'block' : 'none';
     }
 
     if (resetNode) {
         resetNode.style.display = isCurrentUserAdmin() ? 'block' : 'none';
     }
+}
+
+function logoutFromNativeTeamsDrawer() {
+    if (window.auth && typeof window.auth.logout === 'function') {
+        window.auth.logout();
+    } else {
+        localStorage.removeItem('imeConnected');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+    }
+
+    localStorage.setItem('imeGuestMode', 'false');
+    window.location.href = 'ouverture.html';
 }
 
 function initNativeTeamsExperience() {
@@ -65,6 +91,7 @@ function initNativeTeamsExperience() {
     const drawerNode = document.getElementById('appNativeTeamsDrawer');
     const adminResetNode = document.getElementById('appNativeTeamsAdminResetLink');
     const accessibilityNode = document.getElementById('appNativeTeamsAccessibilityLink');
+    const logoutNode = document.getElementById('appNativeTeamsLogoutBtn');
 
     if (chromeNode) chromeNode.setAttribute('aria-hidden', 'false');
 
@@ -104,6 +131,13 @@ function initNativeTeamsExperience() {
             closeNativeTeamsDrawer();
             const toggleNode = document.getElementById('a11yToggleBtn');
             if (toggleNode) toggleNode.click();
+        });
+    }
+
+    if (logoutNode) {
+        logoutNode.addEventListener('click', () => {
+            closeNativeTeamsDrawer();
+            logoutFromNativeTeamsDrawer();
         });
     }
 

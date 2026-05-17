@@ -44,17 +44,43 @@ function closeNativeBlogCreatePanel() {
 
 function updateNativeBlogDrawerLinks() {
     const profileNode = document.getElementById('appNativeBlogProfileLink');
+    const messagesNode = document.getElementById('appNativeBlogMessagesLink');
+    const logoutNode = document.getElementById('appNativeBlogLogoutBtn');
     const resetNode = document.getElementById('appNativeBlogAdminResetLink');
     const user = getConnectedUser();
+    const isLogged = !!user;
 
     if (profileNode) {
         const userName = user && user.name ? String(user.name).trim() : '';
         profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+        profileNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (messagesNode) {
+        messagesNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (logoutNode) {
+        logoutNode.style.display = isLogged ? 'block' : 'none';
     }
 
     if (resetNode) {
         resetNode.style.display = isAdminUser() ? 'block' : 'none';
     }
+}
+
+function logoutFromNativeBlogDrawer() {
+    if (window.auth && typeof window.auth.logout === 'function') {
+        window.auth.logout();
+    } else {
+        localStorage.removeItem('imeConnected');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+    }
+
+    localStorage.setItem('imeGuestMode', 'false');
+    window.location.href = 'ouverture.html';
 }
 
 function initNativeBlogExperience() {
@@ -72,6 +98,7 @@ function initNativeBlogExperience() {
     const closeCreateBtn = document.getElementById('appNativeBlogCloseCreateBtn');
     const accessibilityNode = document.getElementById('appNativeBlogAccessibilityLink');
     const adminResetNode = document.getElementById('appNativeBlogAdminResetLink');
+    const logoutNode = document.getElementById('appNativeBlogLogoutBtn');
 
     if (menuBtnNode) {
         menuBtnNode.addEventListener('click', () => {
@@ -124,6 +151,13 @@ function initNativeBlogExperience() {
             if (isAdminUser() && typeof window.showAdminResetPassword === 'function') {
                 window.showAdminResetPassword();
             }
+        });
+    }
+
+    if (logoutNode) {
+        logoutNode.addEventListener('click', () => {
+            closeNativeBlogDrawer();
+            logoutFromNativeBlogDrawer();
         });
     }
 }

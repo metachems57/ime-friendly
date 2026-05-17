@@ -3,6 +3,7 @@
         let runtimeTools = [];
         let runtimeToolsLoaded = false;
         let nativeToolsDrawerReady = false;
+        let nativeToolsPhotoFlow = null;
 
         function isNativeAppRuntime() {
             try {
@@ -43,22 +44,199 @@
             document.body.classList.remove('app-native-tools-create-open');
         }
 
+        function closeNativeToolsCameraLauncher() {
+            const launcher = document.getElementById('appNativeToolsCameraLauncher');
+            if (launcher) launcher.hidden = true;
+        }
+
+        function openNativeToolsCameraLauncher() {
+            const launcher = document.getElementById('appNativeToolsCameraLauncher');
+            const titleNode = document.getElementById('appNativeToolsCameraLauncherTitle');
+            if (!launcher) return;
+
+            if (titleNode && nativeToolsPhotoFlow) {
+                titleNode.textContent = `Étape ${nativeToolsPhotoFlow.currentStep}`;
+            }
+
+            launcher.hidden = false;
+        }
+
+        function closeNativeToolsStepModal() {
+            const modal = document.getElementById('appNativeToolsStepModal');
+            if (modal) modal.hidden = true;
+        }
+
+        function clearNativeToolsPhotoFlow() {
+            nativeToolsPhotoFlow = null;
+            closeNativeToolsCameraLauncher();
+            closeNativeToolsStepModal();
+        }
+
+        function triggerNativeToolsCamera() {
+            const input = document.getElementById('appNativeToolsCameraInput');
+            if (!input || !nativeToolsPhotoFlow) return;
+
+            input.value = '';
+            window.setTimeout(() => {
+                input.click();
+            }, 60);
+        }
+
+        function startNativeToolsPhotoFlow() {
+            if (!isUserLoggedIn()) {
+                alert("Mode invité: connectez-vous pour publier.");
+                return;
+            }
+
+            nativeToolsPhotoFlow = {
+                currentStep: 1,
+                steps: [],
+                currentImage: '',
+                currentText: ''
+            };
+
+            closeNativeToolsDrawer();
+            closeNativeToolsCreatePanel();
+            openNativeToolsCameraLauncher();
+        }
+
+        function openNativeToolsStepModal(imageDataUrl) {
+            const modal = document.getElementById('appNativeToolsStepModal');
+            const titleNode = document.getElementById('appNativeToolsStepTitle');
+            const imageNode = document.getElementById('appNativeToolsStepImagePreview');
+            const textNode = document.getElementById('appNativeToolsStepText');
+            if (!modal || !titleNode || !imageNode || !textNode || !nativeToolsPhotoFlow) return;
+
+            nativeToolsPhotoFlow.currentImage = String(imageDataUrl || '');
+            titleNode.textContent = `Étape ${nativeToolsPhotoFlow.currentStep}`;
+            imageNode.src = nativeToolsPhotoFlow.currentImage;
+            textNode.value = '';
+
+            closeNativeToolsCameraLauncher();
+            modal.hidden = false;
+            textNode.focus();
+        }
+
+        function createNativePhotoStepGroup(step, index) {
+            const stepIndex = index + 1;
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'step-group';
+            stepDiv.dataset.index = stepIndex;
+
+            const inputId = `step-image-native-${stepIndex}-${Date.now()}`;
+            const safeDescription = String(step?.description || '').trim();
+            const images = Array.isArray(step?.images) ? step.images.map((img) => sanitizeImageSrc(img)).filter(Boolean) : [];
+            const imagesJson = escapeHtml(JSON.stringify(images));
+
+            stepDiv.innerHTML = `
+                <h3>Étape ${stepIndex}</h3>
+                <div class="form-group">
+                    <textarea name="step-description" placeholder="Description de l'étape ${stepIndex}..." required>${escapeHtml(safeDescription)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="${inputId}" class="file-label">Ajouter des images</label>
+                    <input type="file" id="${inputId}" name="step-images" multiple accept="image/*">
+                    <input type="hidden" name="step-images-cache" value="${imagesJson}">
+                </div>
+                <div id="image-preview-native-${stepIndex}" class="image-preview-container"></div>
+            `;
+
+            const previewContainer = stepDiv.querySelector(`#image-preview-native-${stepIndex}`);
+            if (previewContainer && images.length) {
+                previewContainer.innerHTML = images
+                    .map((imgSrc) => `<img src="${escapeHtml(imgSrc)}" class="image-preview-thumb" alt="Aperçu étape ${stepIndex}">`)
+                    .join('');
+                previewContainer.style.display = 'flex';
+            }
+
+            const stepInput = stepDiv.querySelector(`#${inputId}`);
+            const cacheInput = stepDiv.querySelector('input[name="step-images-cache"]');
+            if (stepInput) {
+                stepInput.addEventListener('change', (event) => {
+                    if (cacheInput) cacheInput.value = '';
+                    handleImageSelection(event, `image-preview-native-${stepIndex}`);
+                });
+            }
+
+            return stepDiv;
+        }
+
+        function draftNativeToolsPhotoFlowIntoForm() {
+            if (!nativeToolsPhotoFlow || !nativeToolsPhotoFlow.steps.length) {
+                alert("Ajoutez au moins une étape.");
+                return;
+            }
+
+            const addToolForm = document.getElementById('addToolForm');
+            const stepsContainer = document.getElementById('steps-container');
+            if (!addToolForm || !stepsContainer) {
+                clearNativeToolsPhotoFlow();
+                return;
+            }
+
+            const nameInput = addToolForm.querySelector('[name="name"]');
+            const ageInput = addToolForm.querySelector('[name="age"]');
+            if (nameInput) nameInput.value = '';
+            if (ageInput) ageInput.value = '';
+
+            stepsContainer.innerHTML = '';
+            nativeToolsPhotoFlow.steps.forEach((step, index) => {
+                stepsContainer.appendChild(createNativePhotoStepGroup(step, index));
+            });
+
+            if (!isUserLoggedIn()) {
+                addToolForm.querySelectorAll('input, textarea, button').forEach((field) => {
+                    field.disabled = true;
+                });
+            }
+
+            clearNativeToolsPhotoFlow();
+            openNativeToolsCreatePanel();
+            if (nameInput) nameInput.focus();
+        }
+
         function updateNativeToolsDrawerLinks() {
             const profileNode = document.getElementById('appNativeToolsProfileLink');
+            const messagesNode = document.getElementById('appNativeToolsMessagesLink');
+            const logoutNode = document.getElementById('appNativeToolsLogoutBtn');
             const resetNode = document.getElementById('appNativeToolsAdminResetLink');
             const user = getConnectedUser();
             const isAdmin = window.auth && typeof window.auth.isAdmin === 'function'
                 ? window.auth.isAdmin()
                 : String(user?.role || '').trim().toLowerCase() === 'admin';
+            const isLogged = !!user;
 
             if (profileNode) {
                 const userName = user && user.name ? String(user.name).trim() : '';
                 profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+                profileNode.style.display = isLogged ? 'block' : 'none';
+            }
+
+            if (messagesNode) {
+                messagesNode.style.display = isLogged ? 'block' : 'none';
+            }
+
+            if (logoutNode) {
+                logoutNode.style.display = isLogged ? 'block' : 'none';
             }
 
             if (resetNode) {
                 resetNode.style.display = isAdmin ? 'block' : 'none';
             }
+        }
+
+        function logoutFromNativeToolsDrawer() {
+            if (window.auth && typeof window.auth.logout === 'function') {
+                window.auth.logout();
+            } else {
+                localStorage.removeItem('imeConnected');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('userName');
+            }
+
+            localStorage.setItem('imeGuestMode', 'false');
+            window.location.href = 'ouverture.html';
         }
 
         function initNativeToolsExperience() {
@@ -73,9 +251,18 @@
             const backdropNode = document.getElementById('appNativeToolsDrawerBackdrop');
             const drawerNode = document.getElementById('appNativeToolsDrawer');
             const publishBtnNode = document.getElementById('appNativeToolsPublishBtn');
+            const cameraBtnNode = document.getElementById('appNativeToolsCameraBtn');
             const closeCreateBtn = document.getElementById('appNativeToolsCloseCreateBtn');
             const accessibilityNode = document.getElementById('appNativeToolsAccessibilityLink');
             const adminResetNode = document.getElementById('appNativeToolsAdminResetLink');
+            const logoutNode = document.getElementById('appNativeToolsLogoutBtn');
+            const cameraInputNode = document.getElementById('appNativeToolsCameraInput');
+            const openCameraNowNode = document.getElementById('appNativeToolsOpenCameraNowBtn');
+            const quitLauncherNode = document.getElementById('appNativeToolsCameraLauncherQuit');
+            const validateBtnNode = document.getElementById('appNativeToolsStepValidateBtn');
+            const addStepBtnNode = document.getElementById('appNativeToolsStepAddBtn');
+            const retryBtnNode = document.getElementById('appNativeToolsStepRetryBtn');
+            const stepTextNode = document.getElementById('appNativeToolsStepText');
 
             if (menuBtnNode) {
                 menuBtnNode.addEventListener('click', () => {
@@ -110,6 +297,12 @@
                 });
             }
 
+            if (cameraBtnNode) {
+                cameraBtnNode.addEventListener('click', () => {
+                    startNativeToolsPhotoFlow();
+                });
+            }
+
             if (closeCreateBtn) {
                 closeCreateBtn.addEventListener('click', closeNativeToolsCreatePanel);
             }
@@ -129,6 +322,94 @@
                     if (canReset && typeof window.showAdminResetPassword === 'function') {
                         window.showAdminResetPassword();
                     }
+                });
+            }
+
+            if (logoutNode) {
+                logoutNode.addEventListener('click', () => {
+                    closeNativeToolsDrawer();
+                    logoutFromNativeToolsDrawer();
+                });
+            }
+
+            if (quitLauncherNode) {
+                quitLauncherNode.addEventListener('click', () => {
+                    clearNativeToolsPhotoFlow();
+                });
+            }
+
+            if (openCameraNowNode) {
+                openCameraNowNode.addEventListener('click', () => {
+                    triggerNativeToolsCamera();
+                });
+            }
+
+            if (cameraInputNode) {
+                cameraInputNode.addEventListener('change', async (event) => {
+                    if (!nativeToolsPhotoFlow) return;
+                    const file = event.target.files && event.target.files[0];
+                    if (!file) {
+                        return;
+                    }
+
+                    try {
+                        const dataUrl = await compressImageFile(file);
+                        openNativeToolsStepModal(dataUrl);
+                    } catch (error) {
+                        alert("La photo n'a pas pu être traitée.");
+                    } finally {
+                        event.target.value = '';
+                    }
+                });
+            }
+
+            if (addStepBtnNode) {
+                addStepBtnNode.addEventListener('click', () => {
+                    if (!nativeToolsPhotoFlow) return;
+                    const description = String(stepTextNode?.value || '').trim();
+                    if (!description) {
+                        alert("Ajoutez un texte pour cette étape.");
+                        return;
+                    }
+
+                    nativeToolsPhotoFlow.steps.push({
+                        description,
+                        images: [nativeToolsPhotoFlow.currentImage]
+                    });
+
+                    nativeToolsPhotoFlow.currentStep += 1;
+                    nativeToolsPhotoFlow.currentImage = '';
+                    nativeToolsPhotoFlow.currentText = '';
+                    closeNativeToolsStepModal();
+                    openNativeToolsCameraLauncher();
+                    triggerNativeToolsCamera();
+                });
+            }
+
+            if (validateBtnNode) {
+                validateBtnNode.addEventListener('click', () => {
+                    if (!nativeToolsPhotoFlow) return;
+                    const description = String(stepTextNode?.value || '').trim();
+                    if (!description) {
+                        alert("Ajoutez un texte pour cette étape.");
+                        return;
+                    }
+
+                    nativeToolsPhotoFlow.steps.push({
+                        description,
+                        images: [nativeToolsPhotoFlow.currentImage]
+                    });
+
+                    draftNativeToolsPhotoFlowIntoForm();
+                });
+            }
+
+            if (retryBtnNode) {
+                retryBtnNode.addEventListener('click', () => {
+                    if (!nativeToolsPhotoFlow) return;
+                    closeNativeToolsStepModal();
+                    openNativeToolsCameraLauncher();
+                    triggerNativeToolsCamera();
                 });
             }
         }
@@ -489,18 +770,32 @@
                 const description = stepElement.querySelector('textarea[name="step-description"]').value;
                 const imageInput = stepElement.querySelector('input[type="file"]');
                 const files = Array.from(imageInput.files);
+                const cacheInput = stepElement.querySelector('input[name="step-images-cache"]');
+                let cachedImages = [];
+                if (cacheInput && cacheInput.value) {
+                    try {
+                        const parsed = JSON.parse(cacheInput.value);
+                        cachedImages = Array.isArray(parsed) ? parsed.map((img) => sanitizeImageSrc(img)).filter(Boolean) : [];
+                    } catch (error) {
+                        cachedImages = [];
+                    }
+                }
 
-                if (description.trim() === "" || files.length === 0) {
+                if (description.trim() === "" || (files.length === 0 && cachedImages.length === 0)) {
                     alert(`Veuillez remplir la description et ajouter une image pour l'étape ${index + 1}.`);
                     hasInvalidStep = true;
                     return;
                 }
 
-                const imagePromises = files.map(file => compressImageFile(file));
-                
-                allImagesPromises.push(Promise.all(imagePromises).then(imagesBase64 => {
-                    orderedSteps[index] = { description, images: imagesBase64 };
-                }));
+                if (files.length > 0) {
+                    const imagePromises = files.map(file => compressImageFile(file));
+                    allImagesPromises.push(Promise.all(imagePromises).then(imagesBase64 => {
+                        orderedSteps[index] = { description, images: imagesBase64 };
+                    }));
+                    return;
+                }
+
+                orderedSteps[index] = { description, images: cachedImages };
             });
 
             if (hasInvalidStep) {

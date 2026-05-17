@@ -10,11 +10,36 @@
     <meta name="apple-mobile-web-app-title" content="IME-Friendly">
     <link rel="apple-touch-icon" href="images/pwa/icon-192.svg">
     <title>Ressources - IME-Friendly</title>
+    <link rel="stylesheet" href="style-app-native-shell.css">
     <link rel="stylesheet" href="style-ressources.css">
     <link rel="stylesheet" href="style-messages.css">
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
 <body>
+    <div id="appNativeShell" class="app-native-shell-chrome" aria-hidden="true">
+        <div class="app-native-shell-topbar">
+            <button id="appNativeShellMenuBtn" class="app-native-shell-menu-btn" type="button" aria-label="Ouvrir le menu">
+                <span></span><span></span><span></span>
+            </button>
+            <h2>Ressources</h2>
+        </div>
+        <div id="appNativeShellDrawerBackdrop" class="app-native-shell-drawer-backdrop" hidden></div>
+        <aside id="appNativeShellDrawer" class="app-native-shell-drawer" aria-hidden="true">
+            <a href="index.html?fromApp=1">Accueil</a>
+            <a id="appNativeShellProfileLink" href="profil.html">Profil</a>
+            <a id="appNativeShellMessagesLink" href="messagerie.html">Messagerie</a>
+            <button id="appNativeShellLogoutBtn" type="button">Se déconnecter</button>
+            <a href="reseau.html">Réseau</a>
+            <a href="outils.html">Outils</a>
+            <a href="blog.html">Blog</a>
+            <a href="teams.html">Vie de l'IME</a>
+            <a href="ressources.html" class="is-active">Ressources</a>
+            <a href="contact.html">Contacte</a>
+            <button id="appNativeShellAdminResetLink" type="button">Réinitialiser Mdp</button>
+            <button id="appNativeShellAccessibilityLink" type="button">Accessibilité</button>
+        </aside>
+    </div>
+
     <header class="ressources-header">
         <div class="header-nav">
             <div class="header-left-links">
@@ -67,6 +92,7 @@
     <script src="js/activity-notifications.js"></script>
     <script src="js/messages-widget.js"></script>
     <script src="js/accessibility.js"></script>
+    <script src="js/app-native-shell.js"></script>
     <script src="js/pwa-init.js"></script>
 </body>
 </html>

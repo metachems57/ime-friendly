@@ -73,17 +73,43 @@ function triggerLikeBurst(postElement) {
 
 function updateNativeReseauDrawerLinks() {
     const profileNode = document.getElementById('appNativeDrawerProfile');
+    const messagesNode = document.getElementById('appNativeDrawerMessages');
+    const logoutNode = document.getElementById('appNativeReseauLogoutBtn');
     const resetNode = document.getElementById('appNativeReseauAdminResetLink');
     const user = getConnectedUser();
+    const isLogged = !!user;
 
     if (profileNode) {
         const userName = user && user.name ? String(user.name).trim() : '';
         profileNode.href = userName ? `profil.html?user=${encodeURIComponent(userName)}` : 'profil.html';
+        profileNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (messagesNode) {
+        messagesNode.style.display = isLogged ? 'block' : 'none';
+    }
+
+    if (logoutNode) {
+        logoutNode.style.display = isLogged ? 'block' : 'none';
     }
 
     if (resetNode) {
         resetNode.style.display = isAdminUser() ? 'block' : 'none';
     }
+}
+
+function logoutFromNativeReseauDrawer() {
+    if (window.auth && typeof window.auth.logout === 'function') {
+        window.auth.logout();
+    } else {
+        localStorage.removeItem('imeConnected');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+    }
+
+    localStorage.setItem('imeGuestMode', 'false');
+    window.location.href = 'ouverture.html';
 }
 
 function initNativeReseauExperience() {
@@ -99,6 +125,7 @@ function initNativeReseauExperience() {
     const drawerNode = document.getElementById('appNativeReseauDrawer');
     const adminResetNode = document.getElementById('appNativeReseauAdminResetLink');
     const accessibilityNode = document.getElementById('appNativeReseauAccessibilityLink');
+    const logoutNode = document.getElementById('appNativeReseauLogoutBtn');
     const publishBtn = document.getElementById('appNativePublishBtn');
     const cameraBtn = document.getElementById('appNativeCameraBtn');
     const closeCreateBtn = document.getElementById('appNativeCloseCreateBtn');
@@ -139,6 +166,13 @@ function initNativeReseauExperience() {
             closeNativeReseauDrawer();
             const toggleNode = document.getElementById('a11yToggleBtn');
             if (toggleNode) toggleNode.click();
+        });
+    }
+
+    if (logoutNode) {
+        logoutNode.addEventListener('click', () => {
+            closeNativeReseauDrawer();
+            logoutFromNativeReseauDrawer();
         });
     }
 

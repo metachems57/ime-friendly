@@ -5,6 +5,19 @@ function getResourcesCatalog() {
     return [];
 }
 
+function isNativeAppRuntime() {
+    try {
+        if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+            return window.Capacitor.isNativePlatform();
+        }
+    } catch (error) {
+        // ignore
+    }
+
+    const protocol = String(window.location.protocol || '');
+    return protocol === 'capacitor:' || protocol === 'file:';
+}
+
 function buildResourceCard(resource) {
     const card = document.createElement('a');
     card.className = 'resource-page-card';
@@ -62,6 +75,61 @@ function renderResourcesGrid() {
     resources.forEach((resource) => {
         grid.appendChild(buildResourceCard(resource));
     });
+
+    if (isNativeAppRuntime()) {
+        initNativeInfiniteCarousel(grid);
+    }
+}
+
+function initNativeInfiniteCarousel(grid) {
+    const cards = Array.from(grid.querySelectorAll('.resource-page-card'));
+    if (cards.length <= 1) return;
+
+    const firstClone = cards[0].cloneNode(true);
+    const lastClone = cards[cards.length - 1].cloneNode(true);
+    firstClone.dataset.carouselClone = 'first';
+    lastClone.dataset.carouselClone = 'last';
+
+    grid.insertBefore(lastClone, cards[0]);
+    grid.appendChild(firstClone);
+
+    const allCards = Array.from(grid.querySelectorAll('.resource-page-card'));
+    const firstRealCard = allCards[1];
+    const lastRealCard = allCards[allCards.length - 2];
+    const firstCloneCard = allCards[allCards.length - 1];
+
+    let isAdjusting = false;
+
+    const jumpToCard = (cardNode) => {
+        if (!cardNode) return;
+        isAdjusting = true;
+        grid.scrollTo({ left: cardNode.offsetLeft, behavior: 'auto' });
+        requestAnimationFrame(() => {
+            isAdjusting = false;
+        });
+    };
+
+    requestAnimationFrame(() => {
+        jumpToCard(firstRealCard);
+    });
+
+    const handleScroll = () => {
+        if (isAdjusting) return;
+        const x = grid.scrollLeft;
+        const firstRealX = firstRealCard.offsetLeft;
+        const firstCloneX = firstCloneCard.offsetLeft;
+
+        if (x <= firstRealX - 8) {
+            jumpToCard(lastRealCard);
+            return;
+        }
+
+        if (x >= firstCloneX - 8) {
+            jumpToCard(firstRealCard);
+        }
+    };
+
+    grid.addEventListener('scroll', handleScroll, { passive: true });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

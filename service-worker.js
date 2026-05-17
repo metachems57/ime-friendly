@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ime-friendly-pwa-v32';
+const CACHE_NAME = 'ime-friendly-pwa-v41';
 const OFFLINE_URL = 'offline.html';
 
 const PRECACHE_URLS = [
@@ -28,6 +28,7 @@ const PRECACHE_URLS = [
     'style-messages.css',
     'style-ressources.css',
     'style-accessibility.css',
+    'style-app-native-shell.css',
     'manifest.webmanifest',
     'images/pwa/icon-192.svg',
     'images/pwa/icon-512.svg',
@@ -49,6 +50,7 @@ const PRECACHE_URLS = [
     'js/resources-data.js',
     'js/ressources.js',
     'js/accessibility.js',
+    'js/app-native-shell.js',
     'js/reseau.js',
     'js/blog.js',
     'js/outils.js',
