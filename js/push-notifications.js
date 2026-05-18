@@ -2,6 +2,7 @@
     let initialized = false;
     let currentToken = '';
     let runtimeConfigPromise = null;
+    const PENDING_TOKEN_KEY = 'imePushPendingToken';
 
     function isNativeAppRuntime() {
         try {
@@ -112,7 +113,24 @@
         }
 
         currentToken = cleanToken;
+        try {
+            localStorage.removeItem(PENDING_TOKEN_KEY);
+        } catch (error) {
+            // ignore
+        }
         return true;
+    }
+
+    async function flushPendingPushToken() {
+        let pendingToken = '';
+        try {
+            pendingToken = String(localStorage.getItem(PENDING_TOKEN_KEY) || '').trim();
+        } catch (error) {
+            pendingToken = '';
+        }
+
+        if (!pendingToken) return false;
+        return upsertPushToken(pendingToken);
     }
 
     async function disableCurrentPushToken() {
@@ -245,6 +263,12 @@
         push.addListener('registration', async (token) => {
             const tokenValue = String(token?.value || '').trim();
             if (!tokenValue) return;
+            currentToken = tokenValue;
+            try {
+                localStorage.setItem(PENDING_TOKEN_KEY, tokenValue);
+            } catch (error) {
+                // ignore
+            }
             await upsertPushToken(tokenValue);
         });
 
@@ -273,6 +297,7 @@
 
             if (permission?.receive === 'granted') {
                 await push.register();
+                await flushPendingPushToken();
             } else {
                 console.warn('[push] permission not granted');
             }
@@ -281,6 +306,12 @@
             localStorage.setItem('imePushEnabled', 'false');
             return false;
         }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'imeConnected' || event.key === 'userName') {
+                flushPendingPushToken().catch(() => {});
+            }
+        });
 
         return true;
     }

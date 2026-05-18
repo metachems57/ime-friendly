@@ -1,5 +1,13 @@
 (function () {
     let refreshTimer = null;
+    const DRAWER_BADGE_CONFIG = [
+        { category: 'messagerie', hrefContains: 'messagerie.html' },
+        { category: 'reseau', hrefContains: 'reseau.html' },
+        { category: 'blog', hrefContains: 'blog.html' },
+        { category: 'outils', hrefContains: 'outils.html' },
+        { category: 'teams', hrefContains: 'teams.html' },
+        { category: 'profil', hrefContains: 'profil.html' }
+    ];
 
     function getCurrentUserName() {
         if (window.messagingCore && typeof window.messagingCore.getCurrentUserName === 'function') {
@@ -16,16 +24,98 @@
         return String(localStorage.getItem('userName') || '').trim();
     }
 
+    function ensureNativeMenuBadges() {
+        const menuButtons = document.querySelectorAll('button[id$="MenuBtn"][class*="app-native-"]');
+        menuButtons.forEach((button) => {
+            if (!button) return;
+            let badge = button.querySelector('[data-native-menu-badge]');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'messages-badge app-native-menu-badge';
+                badge.setAttribute('data-native-menu-badge', 'true');
+                badge.hidden = true;
+                badge.textContent = '0';
+                button.appendChild(badge);
+            }
+        });
+    }
+
+    function ensureNativeDrawerBadges() {
+        const drawers = document.querySelectorAll(
+            '[id*="Drawer"].app-native-drawer, [id*="Drawer"].app-native-shell-drawer, [id*="Drawer"].app-native-reseau-drawer, [id*="Drawer"].app-native-blog-drawer, [id*="Drawer"].app-native-tools-drawer, [id*="Drawer"].app-native-teams-drawer'
+        );
+
+        drawers.forEach((drawer) => {
+            if (!drawer) return;
+            DRAWER_BADGE_CONFIG.forEach((entry) => {
+                const link = drawer.querySelector(`a[href*="${entry.hrefContains}"]`);
+                if (!link) return;
+
+                link.classList.add('app-native-drawer-link-with-badge');
+
+                let badge = link.querySelector(`[data-native-drawer-badge="${entry.category}"]`);
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'messages-badge app-native-drawer-badge';
+                    badge.setAttribute('data-native-drawer-badge', entry.category);
+                    badge.hidden = true;
+                    badge.textContent = '0';
+                    link.appendChild(badge);
+                }
+            });
+        });
+    }
+
+    function ensureAllBadgeSlots() {
+        ensureNativeMenuBadges();
+        ensureNativeDrawerBadges();
+        ensureProfileReportsBadges();
+    }
+
+    function renderBadgeList(badges, value) {
+        const safeValue = Number(value) || 0;
+        badges.forEach((badge) => {
+            if (!badge) return;
+            if (safeValue > 0) {
+                badge.hidden = false;
+                badge.textContent = safeValue > 99 ? '99+' : String(safeValue);
+            } else {
+                badge.hidden = true;
+                badge.textContent = '0';
+            }
+        });
+    }
+
     function updateUnreadBadges() {
-        const badges = document.querySelectorAll('[data-messages-badge]');
-        if (!badges.length) return;
+        ensureAllBadgeSlots();
 
         const currentUserName = getCurrentUserName();
         let unreadActivity = 0;
         let unreadMessages = 0;
+        let unreadBySource = {
+            reseau: 0,
+            blog: 0,
+            tools: 0,
+            system: 0
+        };
 
         if (currentUserName && window.activityNotifications && typeof window.activityNotifications.getUnreadCount === 'function') {
             unreadActivity = window.activityNotifications.getUnreadCount(currentUserName);
+            if (typeof window.activityNotifications.listForUser === 'function') {
+                const unreadItems = window.activityNotifications.listForUser(currentUserName, {
+                    includeRead: false,
+                    limit: 500
+                });
+                unreadBySource = unreadItems.reduce((acc, item) => {
+                    const source = String(item && item.source || '').trim().toLowerCase();
+                    if (source === 'reseau' || source === 'blog' || source === 'tools' || source === 'system') {
+                        acc[source] += 1;
+                    } else {
+                        acc.system += 1;
+                    }
+                    return acc;
+                }, unreadBySource);
+            }
         }
 
         if (currentUserName && window.messagingCore && typeof window.messagingCore.getUnreadCount === 'function') {
@@ -33,17 +123,15 @@
         }
 
         const unreadCount = unreadActivity + unreadMessages;
+        const globalCount = unreadCount + (isAdminSession() ? getOpenReportsCount() : 0);
 
-        badges.forEach((badge) => {
-            if (!badge) return;
-            if (unreadCount > 0) {
-                badge.hidden = false;
-                badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
-            } else {
-                badge.hidden = true;
-                badge.textContent = '0';
-            }
-        });
+        renderBadgeList(document.querySelectorAll('[data-messages-badge]'), unreadCount);
+        renderBadgeList(document.querySelectorAll('[data-native-menu-badge]'), globalCount);
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="messagerie"]'), unreadCount);
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="reseau"]'), unreadBySource.reseau);
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="blog"]'), unreadBySource.blog);
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="outils"]'), unreadBySource.tools);
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="teams"]'), unreadActivity);
     }
 
     function isAdminSession() {
@@ -111,7 +199,7 @@
     }
 
     function updateAdminReportsBadges() {
-        ensureProfileReportsBadges();
+        ensureAllBadgeSlots();
 
         const badges = document.querySelectorAll('[data-profile-reports-badge]');
         if (!badges.length) return;
@@ -130,10 +218,12 @@
                 badge.textContent = '0';
             }
         });
+
+        renderBadgeList(document.querySelectorAll('[data-native-drawer-badge="profil"]'), openReports);
     }
 
     function init() {
-        ensureProfileReportsBadges();
+        ensureAllBadgeSlots();
         updateUnreadBadges();
         updateAdminReportsBadges();
 

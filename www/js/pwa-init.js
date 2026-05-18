@@ -98,7 +98,7 @@
         // Pour retester le push natif explicitement:
         // localStorage.setItem('imePushEnabled', 'true')
         try {
-            return localStorage.getItem('imePushEnabled') === 'true';
+            return true;
         } catch (error) {
             return false;
         }
