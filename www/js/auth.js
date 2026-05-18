@@ -4,7 +4,8 @@
         email: 'userEmail',
         name: 'userName',
         role: 'userRole',
-        lastLogin: 'userLastLogin'
+        lastLogin: 'userLastLogin',
+        supabaseId: 'userSupabaseId'
     });
 
     const PASSWORD_CONFIG = Object.freeze({
@@ -106,6 +107,7 @@
         removeSessionValue(SESSION_KEYS.name);
         removeSessionValue(SESSION_KEYS.role);
         removeSessionValue(SESSION_KEYS.lastLogin);
+        removeSessionValue(SESSION_KEYS.supabaseId);
     }
 
     function writeSessionFromUser(user) {
@@ -115,6 +117,7 @@
         writeSessionValue(SESSION_KEYS.name, normalizeName(safeUser.name || ''));
         writeSessionValue(SESSION_KEYS.role, normalizeRole(safeUser.role || USER_ROLES.parent));
         writeSessionValue(SESSION_KEYS.lastLogin, safeUser.lastLogin || new Date().toISOString());
+        writeSessionValue(SESSION_KEYS.supabaseId, String(safeUser.supabaseId || '').trim());
     }
 
     function toSupabaseRole(localRole) {
@@ -365,7 +368,8 @@
             email: normalizeEmail(authUser.email || ''),
             name: profileName,
             role: localRole,
-            lastLogin: new Date().toISOString()
+            lastLogin: new Date().toISOString(),
+            supabaseId: authUser.id
         };
 
         writeSessionFromUser(user);
@@ -513,7 +517,8 @@
                     || (sessionUser.email ? sessionUser.email.split('@')[0] : '')
                 ),
                 role: fromSupabaseRole(profile && profile.role),
-                lastLogin: new Date().toISOString()
+                lastLogin: new Date().toISOString(),
+                supabaseId: sessionUser.id
             };
 
             writeSessionFromUser(user);
@@ -536,7 +541,8 @@
             email: readSessionValue(SESSION_KEYS.email, ''),
             name: readSessionValue(SESSION_KEYS.name, ''),
             role: readSessionValue(SESSION_KEYS.role, ''),
-            lastLogin: readSessionValue(SESSION_KEYS.lastLogin, '')
+            lastLogin: readSessionValue(SESSION_KEYS.lastLogin, ''),
+            supabaseId: String(readSessionValue(SESSION_KEYS.supabaseId, '') || '').trim()
         };
     }
 
@@ -563,11 +569,19 @@
             name: session.name,
             role: session.role,
             lastLogin: session.lastLogin,
-            supabaseId: String((localUser && localUser.supabaseId) || '').trim(),
+            supabaseId: session.supabaseId || String((localUser && localUser.supabaseId) || '').trim(),
             imeStatus: String((localUser && localUser.imeStatus) || '').trim(),
             professionalTitle: String((localUser && localUser.professionalTitle) || '').trim(),
             profilePhoto: String((localUser && localUser.profilePhoto) || '').trim()
         };
+    }
+
+    function getCurrentUserSupabaseId() {
+        const session = getCurrentSession();
+        const fromSession = String(session.supabaseId || '').trim();
+        if (fromSession) return fromSession;
+        const currentUser = getCurrentUser();
+        return String((currentUser && currentUser.supabaseId) || '').trim();
     }
 
     function isLoggedIn() {
@@ -1162,7 +1176,8 @@
         isAdminSession,
         promoteToAdmin,
         upgradeLegacyUsers,
-        getLastSupabaseError
+        getLastSupabaseError,
+        getCurrentUserSupabaseId
     };
 
     // Nettoyage automatique des anciens secrets au chargement.
@@ -1180,6 +1195,7 @@
             event.key === SESSION_KEYS.connected ||
             event.key === SESSION_KEYS.email ||
             event.key === SESSION_KEYS.name ||
+            event.key === SESSION_KEYS.supabaseId ||
             event.key === 'imeGuestMode'
         ) {
             updatePrivateNavVisibility();

@@ -436,13 +436,101 @@ function isSupabaseReady() {
     return !!getSupabaseClient();
 }
 
+function persistResolvedSupabaseUserId(userId) {
+    const cleanId = String(userId || '').trim();
+    if (!cleanId) return;
+    try {
+        if (window.dataStore && typeof window.dataStore.writeValue === 'function') {
+            window.dataStore.writeValue('userSupabaseId', cleanId);
+            return;
+        }
+        localStorage.setItem('userSupabaseId', cleanId);
+    } catch (error) {
+        // ignore storage issues
+    }
+}
+
 async function getCurrentSupabaseUserId() {
     const supabase = getSupabaseClient();
     if (!supabase) return null;
 
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data || !data.user) return null;
-    return data.user.id || null;
+    if (window.auth && typeof window.auth.getCurrentUserSupabaseId === 'function') {
+        const fromSession = String(window.auth.getCurrentUserSupabaseId() || '').trim();
+        if (fromSession) return fromSession;
+    }
+
+    try {
+        const fromStorage = String(localStorage.getItem('userSupabaseId') || '').trim();
+        if (fromStorage) return fromStorage;
+    } catch (error) {
+        // ignore
+    }
+
+    try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!error && data && data.user && data.user.id) {
+            const userId = String(data.user.id).trim();
+            if (userId) {
+                persistResolvedSupabaseUserId(userId);
+                return userId;
+            }
+        }
+    } catch (error) {
+        // fallback below
+    }
+
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        const userId = String(data?.session?.user?.id || '').trim();
+        if (!error && userId) {
+            persistResolvedSupabaseUserId(userId);
+            return userId;
+        }
+    } catch (error) {
+        // fallback below
+    }
+
+    try {
+        const currentUser = window.auth && typeof window.auth.getCurrentUser === 'function'
+            ? window.auth.getCurrentUser()
+            : null;
+        const email = String(currentUser && currentUser.email || '').trim().toLowerCase();
+        if (!email) return null;
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+        if (!error && data && data.id) {
+            const resolvedId = String(data.id).trim();
+            persistResolvedSupabaseUserId(resolvedId);
+            return resolvedId;
+        }
+    } catch (error) {
+        // ignore
+    }
+
+    try {
+        const currentUser = window.auth && typeof window.auth.getCurrentUser === 'function'
+            ? window.auth.getCurrentUser()
+            : null;
+        const displayName = String(currentUser && currentUser.name || '').trim();
+        if (!displayName) return null;
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('display_name', displayName)
+            .limit(1);
+        if (!error && Array.isArray(data) && data[0] && data[0].id) {
+            const resolvedId = String(data[0].id).trim();
+            persistResolvedSupabaseUserId(resolvedId);
+            return resolvedId;
+        }
+    } catch (error) {
+        // ignore
+    }
+
+    return null;
 }
 
 async function fetchProfilesMapByIds(userIds) {

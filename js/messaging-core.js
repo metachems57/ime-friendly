@@ -137,6 +137,14 @@
     }
 
     function getCurrentUserId() {
+        if (window.auth && typeof window.auth.getCurrentUserSupabaseId === 'function') {
+            const fromSession = String(window.auth.getCurrentUserSupabaseId() || '').trim();
+            if (fromSession) return fromSession;
+        }
+
+        const fromStorage = String(localStorage.getItem('userSupabaseId') || '').trim();
+        if (fromStorage) return fromStorage;
+
         const currentUser = getCurrentUser();
         if (currentUser && currentUser.supabaseId) {
             return String(currentUser.supabaseId);
@@ -148,7 +156,28 @@
             const id = String(userByEmail && userByEmail.supabaseId || '').trim();
             if (id) return id;
         }
+
+        const nameKey = normalizeKey(currentUser && currentUser.name);
+        if (nameKey) {
+            const userByName = readUsers().find((user) => normalizeKey(user && user.name) === nameKey);
+            const id = String(userByName && userByName.supabaseId || '').trim();
+            if (id) return id;
+        }
         return '';
+    }
+
+    function persistCurrentUserSupabaseId(userId) {
+        const cleanId = String(userId || '').trim();
+        if (!cleanId) return;
+        try {
+            if (window.dataStore && typeof window.dataStore.writeValue === 'function') {
+                window.dataStore.writeValue('userSupabaseId', cleanId);
+            } else {
+                localStorage.setItem('userSupabaseId', cleanId);
+            }
+        } catch (error) {
+            // ignore storage issues
+        }
     }
 
     function getCurrentUserRole() {
@@ -262,8 +291,106 @@
             return String(currentUser.supabaseId);
         }
 
+        if (currentUser && normalizeKey(currentUser.name) === normalizeKey(targetName)) {
+            const fromStorage = String(localStorage.getItem('userSupabaseId') || '').trim();
+            if (fromStorage) return fromStorage;
+        }
+
         const user = findUserByName(targetName);
         return String(user && user.supabaseId || '').trim();
+    }
+
+    function upsertUserSupabaseIdByName(userName, userId) {
+        const cleanName = normalizeName(userName);
+        const cleanId = String(userId || '').trim();
+        if (!cleanName || !cleanId) return;
+
+        const users = readUsers();
+        const key = normalizeKey(cleanName);
+        const target = users.find((user) => normalizeKey(user && user.name) === key);
+        if (!target) return;
+        if (String(target.supabaseId || '').trim() === cleanId) return;
+
+        target.supabaseId = cleanId;
+        writeUsers(users);
+    }
+
+    async function resolveCurrentUserIdFromSupabase() {
+        const supabase = getSupabaseClient();
+        if (!supabase) return '';
+
+        try {
+            const { data, error } = await supabase.auth.getUser();
+            const userId = String(data?.user?.id || '').trim();
+            if (!error && userId) {
+                persistCurrentUserSupabaseId(userId);
+                const currentUser = getCurrentUser();
+                if (currentUser?.name) upsertUserSupabaseIdByName(currentUser.name, userId);
+                return userId;
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        try {
+            const { data, error } = await supabase.auth.getSession();
+            const userId = String(data?.session?.user?.id || '').trim();
+            if (!error && userId) {
+                persistCurrentUserSupabaseId(userId);
+                const currentUser = getCurrentUser();
+                if (currentUser?.name) upsertUserSupabaseIdByName(currentUser.name, userId);
+                return userId;
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        try {
+            const currentUser = getCurrentUser();
+            const email = String(currentUser?.email || '').trim().toLowerCase();
+            if (!email) return '';
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .maybeSingle();
+            const userId = String(data?.id || '').trim();
+            if (!error && userId) {
+                persistCurrentUserSupabaseId(userId);
+                if (currentUser?.name) upsertUserSupabaseIdByName(currentUser.name, userId);
+                return userId;
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        return '';
+    }
+
+    async function resolveProfileIdByNameFromSupabase(userName) {
+        const cleanName = normalizeName(userName);
+        if (!cleanName) return '';
+        const supabase = getSupabaseClient();
+        if (!supabase) return '';
+
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, display_name')
+                .eq('display_name', cleanName)
+                .limit(1);
+            if (!error && Array.isArray(data) && data[0] && data[0].id) {
+                const resolvedId = String(data[0].id).trim();
+                if (resolvedId) {
+                    upsertUserSupabaseIdByName(data[0].display_name || cleanName, resolvedId);
+                    return resolvedId;
+                }
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        return '';
     }
 
     function buildThreadId(a, b) {
@@ -451,8 +578,11 @@
         const supabase = getSupabaseClient();
         if (!supabase) throw new Error('supabase_unavailable');
 
-        const fromUserId = getUserIdByName(payload?.from);
-        const toUserId = getUserIdByName(payload?.to);
+        let fromUserId = getUserIdByName(payload?.from);
+        let toUserId = getUserIdByName(payload?.to);
+        if (!fromUserId) fromUserId = await resolveCurrentUserIdFromSupabase();
+        if (!fromUserId && payload?.from) fromUserId = await resolveProfileIdByNameFromSupabase(payload.from);
+        if (!toUserId && payload?.to) toUserId = await resolveProfileIdByNameFromSupabase(payload.to);
         const content = String(payload?.text || '').trim();
         if (!fromUserId || !toUserId || !content) {
             throw new Error('invalid_payload');
@@ -888,7 +1018,10 @@
 
     async function syncMessagesFromSupabase() {
         const supabase = getSupabaseClient();
-        const currentUserId = getCurrentUserId();
+        let currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            currentUserId = await resolveCurrentUserIdFromSupabase();
+        }
         if (!supabase || !currentUserId) return false;
 
         const [sentResult, receivedResult] = await Promise.all([
