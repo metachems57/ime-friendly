@@ -1,5 +1,6 @@
 (function () {
     let nativeBackBridgeReady = false;
+    let pushBridgeInitDone = false;
 
     function isNativeAppRuntime() {
         try {
@@ -52,6 +53,57 @@
         });
     }
 
+    async function initNativePushBridge() {
+        if (pushBridgeInitDone) return;
+        pushBridgeInitDone = true;
+
+        try {
+            if (!window.pushNotifications || typeof window.pushNotifications.init !== 'function') {
+                await new Promise((resolve) => {
+                    const existing = document.querySelector('script[data-push-bridge="1"]');
+                    if (existing) {
+                        existing.addEventListener('load', () => resolve(), { once: true });
+                        existing.addEventListener('error', () => resolve(), { once: true });
+                        // si deja chargé:
+                        if ((window.pushNotifications && typeof window.pushNotifications.init === 'function') || existing.getAttribute('data-loaded') === '1') {
+                            resolve();
+                        }
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.src = 'js/push-notifications.js';
+                    script.setAttribute('data-push-bridge', '1');
+                    script.addEventListener('load', () => {
+                        script.setAttribute('data-loaded', '1');
+                        resolve();
+                    }, { once: true });
+                    script.addEventListener('error', () => resolve(), { once: true });
+                    document.head.appendChild(script);
+                });
+            }
+
+            if (!window.pushNotifications || typeof window.pushNotifications.init !== 'function') {
+                return;
+            }
+            await window.pushNotifications.init();
+        } catch (error) {
+            console.warn('Push bridge init failed:', error);
+        }
+    }
+
+    function shouldAutoInitPush() {
+        // Mode stable: push natif OFF par defaut pour eviter crash startup.
+        // Les notifications in-app (badges + centre notifications) restent actives.
+        // Pour retester le push natif explicitement:
+        // localStorage.setItem('imePushEnabled', 'true')
+        try {
+            return localStorage.getItem('imePushEnabled') === 'true';
+        } catch (error) {
+            return false;
+        }
+    }
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('service-worker.js').catch((error) => {
@@ -59,9 +111,15 @@
             });
 
             initNativeBackBridge();
+            if (shouldAutoInitPush()) {
+                initNativePushBridge();
+            }
         });
         return;
     }
 
     initNativeBackBridge();
+    if (shouldAutoInitPush()) {
+        initNativePushBridge();
+    }
 })();

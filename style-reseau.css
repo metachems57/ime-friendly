@@ -1154,3 +1154,37 @@ body.is-native-app .like-burst-heart {
         opacity: 0;
     }
 }
+
+.reseau-skeleton {
+    animation: reseauPulse 1.1s ease-in-out infinite alternate;
+}
+
+.reseau-skeleton .skeleton-line,
+.reseau-skeleton .skeleton-media {
+    background: rgba(255, 255, 255, 0.24);
+    border-radius: 10px;
+}
+
+.reseau-skeleton .skeleton-line {
+    height: 14px;
+    margin: 10px 12px 0;
+}
+
+.reseau-skeleton .skeleton-line-lg {
+    width: 72%;
+    height: 18px;
+}
+
+.reseau-skeleton .skeleton-line-sm {
+    width: 42%;
+}
+
+.reseau-skeleton .skeleton-media {
+    height: 220px;
+    margin: 14px 12px 0;
+}
+
+@keyframes reseauPulse {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}

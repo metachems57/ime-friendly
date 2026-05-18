@@ -4,6 +4,9 @@
         let runtimeToolsLoaded = false;
         let nativeToolsDrawerReady = false;
         let nativeToolsPhotoFlow = null;
+        let nativeToolsRenderToken = 0;
+        const NATIVE_TOOLS_INITIAL_BATCH = 8;
+        const NATIVE_TOOLS_BATCH = 6;
 
         function isNativeAppRuntime() {
             try {
@@ -455,6 +458,20 @@
             return user.name.toLowerCase() === String(authorName).toLowerCase();
         }
 
+        function renderToolsSkeleton(toolsGrid, count = 3) {
+            toolsGrid.innerHTML = '';
+            for (let i = 0; i < count; i += 1) {
+                const skeleton = document.createElement('div');
+                skeleton.className = 'tool-card tools-skeleton';
+                skeleton.innerHTML = `
+                    <div class="skeleton-media"></div>
+                    <div class="skeleton-line skeleton-line-lg"></div>
+                    <div class="skeleton-line"></div>
+                `;
+                toolsGrid.appendChild(skeleton);
+            }
+        }
+
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>"']/g, (char) => ({
                 '&': '&amp;',
@@ -891,9 +908,10 @@
             }
         });
 
-        function addNewToolToDOM(toolData) {
+        function addNewToolToDOM(toolData, options = {}) {
             const toolsGrid = document.getElementById('tools-grid');
             if (!toolsGrid) return;
+            const shouldPrepend = options.prepend !== false;
 
             const toolCard = document.createElement('div');
             toolCard.className = 'tool-card';
@@ -914,7 +932,7 @@
             const safeAge = escapeHtml(toolData.age || 'Non précisé');
             const safeLinkId = encodeURIComponent(String(toolData.id || ''));
             const imagePreview = safeImage
-                ? `<img src="${safeImage}" alt="${safeName}" class="tool-image">`
+                ? `<img src="${safeImage}" alt="${safeName}" class="tool-image" loading="lazy" decoding="async" fetchpriority="low">`
                 : '';
             const favoritePayload = getToolFavoritePayload(toolData);
             const isFavorited = favoritePayload && window.userFavorites && typeof window.userFavorites.isFavorite === 'function'
@@ -941,7 +959,48 @@
                 ${deleteButton}
             `;
 
-            toolsGrid.prepend(toolCard);
+            if (shouldPrepend) {
+                toolsGrid.prepend(toolCard);
+            } else {
+                toolsGrid.appendChild(toolCard);
+            }
+        }
+
+        function renderToolsListWithBatch(savedTools) {
+            const toolsGrid = document.getElementById('tools-grid');
+            if (!toolsGrid) return;
+
+            const tools = Array.isArray(savedTools) ? savedTools : [];
+            nativeToolsRenderToken += 1;
+            const token = nativeToolsRenderToken;
+
+            renderToolsSkeleton(toolsGrid, isNativeAppRuntime() ? 4 : 3);
+            window.setTimeout(() => {
+                if (token !== nativeToolsRenderToken) return;
+
+                toolsGrid.innerHTML = '';
+                if (!tools.length) return;
+
+                if (!isNativeAppRuntime() || tools.length <= NATIVE_TOOLS_INITIAL_BATCH) {
+                    tools.forEach((tool) => addNewToolToDOM(tool, { prepend: false }));
+                    return;
+                }
+
+                let cursor = 0;
+                const appendBatch = (batchSize) => {
+                    if (token !== nativeToolsRenderToken) return;
+                    const limit = Math.min(tools.length, cursor + batchSize);
+                    while (cursor < limit) {
+                        addNewToolToDOM(tools[cursor], { prepend: false });
+                        cursor += 1;
+                    }
+
+                    if (cursor >= tools.length) return;
+                    window.requestAnimationFrame(() => appendBatch(NATIVE_TOOLS_BATCH));
+                };
+
+                appendBatch(NATIVE_TOOLS_INITIAL_BATCH);
+            }, 0);
         }
 
         async function saveToolToStorage(newTool) {
@@ -1179,9 +1238,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    if (savedTools.length > 0) {
-        savedTools.forEach(tool => addNewToolToDOM(tool));
-    }
+    renderToolsListWithBatch(savedTools);
 
     // Active la recherche
     document.getElementById('tool-search').addEventListener('input', function () {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "99030153140",
+    "project_id": "dev1apk",
+    "storage_bucket": "dev1apk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99030153140:android:1fe526ed777a78c0e7a4e1",
+        "android_client_info": {
+          "package_name": "com.imefriendly.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-60x6vKtNm3QclVxewmYQfAVAUZRDRCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

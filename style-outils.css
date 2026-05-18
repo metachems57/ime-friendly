@@ -869,6 +869,36 @@ body.is-native-app #appNativeToolsStepRetryBtn {
     background: linear-gradient(135deg, #8c98ab, #6f7a8c);
 }
 
+.tools-skeleton {
+    animation: toolsPulse 1.1s ease-in-out infinite alternate;
+}
+
+.tools-skeleton .skeleton-media,
+.tools-skeleton .skeleton-line {
+    background: rgba(255, 255, 255, 0.24);
+    border-radius: 10px;
+}
+
+.tools-skeleton .skeleton-media {
+    height: 210px;
+    margin-bottom: 0.75rem;
+}
+
+.tools-skeleton .skeleton-line {
+    height: 14px;
+    margin-top: 0.55rem;
+}
+
+.tools-skeleton .skeleton-line-lg {
+    width: 72%;
+    height: 18px;
+}
+
+@keyframes toolsPulse {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}
+
 @media (max-width: 768px) {
     *,
     *::before,

@@ -890,6 +890,31 @@ body.is-native-app .native-blog-plus-sign {
     margin-left: 0.2rem;
 }
 
+.blog-skeleton {
+    animation: blogPulse 1.1s ease-in-out infinite alternate;
+}
+
+.blog-skeleton .skeleton-line {
+    background: rgba(255, 255, 255, 0.24);
+    border-radius: 10px;
+    height: 14px;
+    margin-top: 0.55rem;
+}
+
+.blog-skeleton .skeleton-line-lg {
+    width: 68%;
+    height: 18px;
+}
+
+.blog-skeleton .skeleton-line-sm {
+    width: 38%;
+}
+
+@keyframes blogPulse {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}
+
 @media (max-width: 768px) {
     .header {
         height: auto;

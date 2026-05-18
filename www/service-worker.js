@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ime-friendly-pwa-v41';
+const CACHE_NAME = 'ime-friendly-pwa-v47';
 const OFFLINE_URL = 'offline.html';
 
 const PRECACHE_URLS = [
@@ -30,6 +30,7 @@ const PRECACHE_URLS = [
     'style-accessibility.css',
     'style-app-native-shell.css',
     'manifest.webmanifest',
+    'app-runtime-config.json',
     'images/pwa/icon-192.svg',
     'images/pwa/icon-512.svg',
     'images/ressources/cra-lorraine.png',
@@ -43,6 +44,8 @@ const PRECACHE_URLS = [
     'images/ressources/ime-le-point-du-jour.png',
     'js/data-store.js',
     'js/supabase-client.js',
+    'js/offline-action-queue.js',
+    'js/push-notifications.js',
     'js/supabase-sync.js',
     'js/auth.js',
     'js/index.js',

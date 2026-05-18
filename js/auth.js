@@ -769,6 +769,9 @@
     }
 
     function logout() {
+        if (window.pushNotifications && typeof window.pushNotifications.onLogout === 'function') {
+            window.pushNotifications.onLogout();
+        }
         const supabase = getSupabaseClient();
         if (supabase) {
             supabase.auth.signOut().catch(() => {});

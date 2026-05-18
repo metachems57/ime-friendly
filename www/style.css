@@ -1385,7 +1385,9 @@ body.is-native-app .service-section .service-card.service-card-vie {
 
 body.is-native-app .service-card-blog {
     --native-blog-top-percent: 50; /* base */
-    order: 2;
+    orderAjouter google-services.json dans:
+    /home/chems/Documents/mon_site/android/app/google-services.json
+    Vérifier que le package Firebase = com.imefriendly.app.: 2;
     grid-area: blog;
     align-self: start;
     position: relative;

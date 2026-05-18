@@ -20,6 +20,10 @@ const postsKey = 'reseauposts'; // Clé unique pour le localStorage de cette pag
 let runtimePosts = [];
 let runtimePostsLoaded = false;
 let nativeReseauDrawerReady = false;
+let nativeReseauRenderedCount = 0;
+let nativeReseauScrollHandler = null;
+const NATIVE_RESEAU_INITIAL_BATCH = 6;
+const NATIVE_RESEAU_BATCH = 5;
 
 function isNativeAppRuntime() {
     try {
@@ -246,6 +250,103 @@ function canDeleteByAuthor(authorName) {
     if (isAdminUser()) return true;
     if (!currentUserName || !authorName) return false;
     return currentUserName.toLowerCase() === String(authorName).toLowerCase();
+}
+
+function getOfflineQueue() {
+    return window.offlineActionQueue || null;
+}
+
+function shouldQueueOfflineAction(error) {
+    const queue = getOfflineQueue();
+    if (navigator.onLine === false) return true;
+    if (!queue || typeof queue.isLikelyNetworkError !== 'function') return false;
+    return queue.isLikelyNetworkError(error);
+}
+
+function queueReseauAction(type, payload) {
+    const queue = getOfflineQueue();
+    if (!queue || typeof queue.enqueue !== 'function') return false;
+    const user = getConnectedUser();
+    queue.enqueue({
+        type,
+        payload,
+        meta: {
+            userEmail: String(user?.email || '').trim().toLowerCase(),
+            userName: String(user?.name || '').trim()
+        }
+    });
+    return true;
+}
+
+function isQueueActionForCurrentUser(item) {
+    const itemEmail = String(item?.meta?.userEmail || '').trim().toLowerCase();
+    if (!itemEmail) return true;
+    const currentEmail = String(getConnectedUser()?.email || '').trim().toLowerCase();
+    return !!currentEmail && currentEmail === itemEmail;
+}
+
+function hasHighlightTargetInUrl() {
+    const query = new URLSearchParams(window.location.search || '');
+    return (
+        query.has('highlightPost') ||
+        query.has('highlightDate') ||
+        query.has('highlightTitle') ||
+        !!window.location.hash
+    );
+}
+
+function renderReseauSkeleton(postsContainer, count = 3) {
+    postsContainer.innerHTML = '';
+    for (let i = 0; i < count; i += 1) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'post reseau-skeleton';
+        skeleton.innerHTML = `
+            <div class="skeleton-line skeleton-line-lg"></div>
+            <div class="skeleton-media"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line-sm"></div>
+        `;
+        postsContainer.appendChild(skeleton);
+    }
+}
+
+function appendReseauPostsBatch(postsContainer, posts, startIndex, batchSize) {
+    let index = startIndex;
+    const limit = Math.min(posts.length, startIndex + batchSize);
+    while (index < limit) {
+        const postElement = createPostElement(posts[index]);
+        if (postElement) postsContainer.appendChild(postElement);
+        index += 1;
+    }
+    nativeReseauRenderedCount = index;
+}
+
+function clearReseauInfiniteScroll() {
+    if (!nativeReseauScrollHandler) return;
+    window.removeEventListener('scroll', nativeReseauScrollHandler);
+    nativeReseauScrollHandler = null;
+}
+
+function setupReseauInfiniteScroll(postsContainer, posts) {
+    clearReseauInfiniteScroll();
+
+    const allowBatchMode = isNativeAppRuntime() && posts.length > NATIVE_RESEAU_INITIAL_BATCH && !hasHighlightTargetInUrl();
+    if (!allowBatchMode) return;
+
+    nativeReseauScrollHandler = () => {
+        if (nativeReseauRenderedCount >= posts.length) {
+            clearReseauInfiniteScroll();
+            return;
+        }
+
+        const scrollBottom = window.scrollY + window.innerHeight;
+        const pageBottom = document.documentElement.scrollHeight - 180;
+        if (scrollBottom < pageBottom) return;
+
+        appendReseauPostsBatch(postsContainer, posts, nativeReseauRenderedCount, NATIVE_RESEAU_BATCH);
+    };
+
+    window.addEventListener('scroll', nativeReseauScrollHandler, { passive: true });
 }
 
 function readPosts() {
@@ -705,6 +806,95 @@ document.getElementById('post-image').addEventListener('change', function(event)
 
 // ==================== GESTION DES POSTS ====================
 
+async function insertReseauPostToSupabase(postData) {
+    const supabase = getSupabaseClient();
+    const authorId = await getCurrentSupabaseUserId();
+    if (!supabase || !authorId) {
+        throw new Error('auth_unavailable');
+    }
+
+    const imageData = await uploadReseauImageIfNeeded(postData?.image);
+    const payload = {
+        author_id: authorId,
+        title: String(postData?.title || '').trim(),
+        content: String(postData?.content || '').trim(),
+        image_data: String(imageData || '').trim(),
+        likes_count: 0
+    };
+
+    const { error } = await supabase.from('reseau_posts').insert(payload);
+    if (error) {
+        throw new Error(error.message || 'insert_failed');
+    }
+    return true;
+}
+
+async function insertReseauCommentToSupabase(postId, commentText) {
+    const supabase = getSupabaseClient();
+    const authorId = await getCurrentSupabaseUserId();
+    if (!supabase || !authorId) {
+        throw new Error('auth_unavailable');
+    }
+
+    const { error } = await supabase.from('reseau_comments').insert({
+        post_id: Number(postId),
+        author_id: authorId,
+        content: String(commentText || '').trim()
+    });
+
+    if (error) {
+        throw new Error(error.message || 'insert_comment_failed');
+    }
+    return true;
+}
+
+async function incrementReseauLikeInSupabase(postId) {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+        throw new Error('supabase_unavailable');
+    }
+
+    const posts = readPosts();
+    const targetPost = posts.find((item) => Number(item.id) === Number(postId));
+    const nextLikes = Number(targetPost?.likes || 0) + 1;
+
+    const { error } = await supabase
+        .from('reseau_posts')
+        .update({ likes_count: nextLikes })
+        .eq('id', Number(postId));
+
+    if (error) {
+        throw new Error(error.message || 'update_like_failed');
+    }
+
+    return nextLikes;
+}
+
+function registerReseauOfflineProcessors() {
+    const queue = getOfflineQueue();
+    if (!queue || typeof queue.registerProcessor !== 'function') return;
+
+    queue.registerProcessor('reseau.createPost', async (item) => {
+        if (!isQueueActionForCurrentUser(item)) return { retry: true };
+        await insertReseauPostToSupabase(item?.payload || {});
+        return { ok: true };
+    });
+
+    queue.registerProcessor('reseau.addComment', async (item) => {
+        if (!isQueueActionForCurrentUser(item)) return { retry: true };
+        const payload = item?.payload || {};
+        await insertReseauCommentToSupabase(payload.postId, payload.commentText);
+        return { ok: true };
+    });
+
+    queue.registerProcessor('reseau.likePost', async (item) => {
+        if (!isQueueActionForCurrentUser(item)) return { retry: true };
+        const payload = item?.payload || {};
+        await incrementReseauLikeInSupabase(payload.postId);
+        return { ok: true };
+    });
+}
+
 // Fonction de soumission du formulaire
 document.getElementById('postForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -729,8 +919,8 @@ document.getElementById('postForm').addEventListener('submit', async function(e)
         comments: []
     };
 
-    const saved = await saveNewPost(newPost);
-    if (!saved) {
+    const saveResult = await saveNewPost(newPost);
+    if (!saveResult.ok) {
         alert("Impossible de publier pour le moment.");
         return;
     }
@@ -739,7 +929,11 @@ document.getElementById('postForm').addEventListener('submit', async function(e)
     imagePreview.style.display = 'none';
     imagePreview.src = '';
 
-    await loadPosts();
+    if (!saveResult.queued) {
+        await loadPosts();
+    } else {
+        alert("Pas de réseau: votre post est en file d'attente et sera envoyé automatiquement.");
+    }
     if (isNativeAppRuntime()) {
         closeNativeCreatePanel();
     }
@@ -749,36 +943,33 @@ document.getElementById('postForm').addEventListener('submit', async function(e)
 // Crée et ajoute un post dans le stockage
 async function saveNewPost(postData) {
     if (!isUserLoggedIn()) {
-        return false;
+        return { ok: false, queued: false };
     }
 
     if (isSupabaseReady()) {
-        const supabase = getSupabaseClient();
-        const authorId = await getCurrentSupabaseUserId();
-        if (!supabase || !authorId) return false;
-
-        const imageData = await uploadReseauImageIfNeeded(postData?.image);
-        const payload = {
-            author_id: authorId,
-            title: String(postData?.title || '').trim(),
-            content: String(postData?.content || '').trim(),
-            image_data: String(imageData || '').trim(),
-            likes_count: 0
-        };
-
-        const { error } = await supabase.from('reseau_posts').insert(payload);
-        if (error) {
-            console.error('Erreur création post réseau (Supabase):', error.message);
-            return false;
+        try {
+            await insertReseauPostToSupabase(postData);
+            return { ok: true, queued: false };
+        } catch (error) {
+            if (shouldQueueOfflineAction(error)) {
+                const queued = queueReseauAction('reseau.createPost', {
+                    title: String(postData?.title || ''),
+                    content: String(postData?.content || ''),
+                    image: String(postData?.image || '')
+                });
+                if (queued) {
+                    return { ok: true, queued: true };
+                }
+            }
+            console.error('Erreur création post réseau (Supabase):', error.message || error);
+            return { ok: false, queued: false };
         }
-
-        return true;
     }
 
     const posts = readPosts();
     posts.unshift(postData);
     writePosts(posts);
-    return true;
+    return { ok: true, queued: false };
 }
 
 // Charge les posts depuis le localStorage et les affiche
@@ -793,15 +984,20 @@ async function loadPosts() {
 
     const postsContainer = document.querySelector('.posts-container');
     if (!postsContainer) return;
-    
+
+    renderReseauSkeleton(postsContainer, isNativeAppRuntime() ? 4 : 3);
+    await Promise.resolve();
+
     postsContainer.innerHTML = '';
-    
-    posts.forEach(postData => {
-        const postElement = createPostElement(postData);
-        if (postElement) {
-            postsContainer.appendChild(postElement);
-        }
-    });
+    nativeReseauRenderedCount = 0;
+
+    if (isNativeAppRuntime() && posts.length > NATIVE_RESEAU_INITIAL_BATCH && !hasHighlightTargetInUrl()) {
+        appendReseauPostsBatch(postsContainer, posts, 0, NATIVE_RESEAU_INITIAL_BATCH);
+        setupReseauInfiniteScroll(postsContainer, posts);
+    } else {
+        clearReseauInfiniteScroll();
+        appendReseauPostsBatch(postsContainer, posts, 0, posts.length);
+    }
 
     highlightPostFromUrl();
 }
@@ -842,7 +1038,7 @@ function createPostElement(postData) {
             ${deleteButton}
         </div>
         ${overlayText ? `<span class="post-title">${overlayText}</span>` : ''}
-        ${safeImage ? `<img src="${safeImage}" class="post-image" alt="Image du post">` : ''}
+        ${safeImage ? `<img src="${safeImage}" class="post-image" alt="Image du post" loading="lazy" decoding="async" fetchpriority="low">` : ''}
         <div class="post-content">
             <p>${safeContent}</p>
         </div>
@@ -936,28 +1132,28 @@ async function addComment(event, postId) {
             const previousAuthors = targetPost.comments.map((comment) => comment?.author).filter(Boolean);
 
             if (isSupabaseReady()) {
-                const supabase = getSupabaseClient();
-                const authorId = await getCurrentSupabaseUserId();
-                if (!supabase || !authorId) {
+                try {
+                    await insertReseauCommentToSupabase(postId, commentText);
+                    notifyCommentOnPost(targetPost, userName, previousAuthors);
+                    await loadPosts();
+                    input.value = '';
+                    return;
+                } catch (error) {
+                    if (shouldQueueOfflineAction(error)) {
+                        const queued = queueReseauAction('reseau.addComment', {
+                            postId: Number(postId),
+                            commentText: String(commentText || '')
+                        });
+                        if (queued) {
+                            input.value = '';
+                            alert("Pas de réseau: commentaire mis en file d'attente.");
+                            return;
+                        }
+                    }
+
                     alert("Impossible d'ajouter le commentaire pour le moment.");
                     return;
                 }
-
-                const { error } = await supabase.from('reseau_comments').insert({
-                    post_id: Number(postId),
-                    author_id: authorId,
-                    content: commentText
-                });
-
-                if (error) {
-                    alert("Impossible d'ajouter le commentaire pour le moment.");
-                    return;
-                }
-
-                notifyCommentOnPost(targetPost, userName, previousAuthors);
-                await loadPosts();
-                input.value = '';
-                return;
             }
 
             const newComment = { author: userName, text: commentText, date: new Date().toISOString() };
@@ -1077,31 +1273,39 @@ async function toggleLike(postId) {
 
     if (postIndex !== -1) {
         if (isSupabaseReady()) {
-            const supabase = getSupabaseClient();
             const targetPost = posts[postIndex];
-            const nextLikes = (targetPost.likes || 0) + 1;
+            try {
+                const nextLikes = await incrementReseauLikeInSupabase(postId);
+                targetPost.likes = nextLikes;
+                writePosts(posts);
+                notifyLikeOnPost(targetPost, getCurrentUserName());
 
-            const { error } = await supabase
-                .from('reseau_posts')
-                .update({ likes_count: nextLikes })
-                .eq('id', Number(postId));
-
-            if (error) {
-                alert("Impossible d'ajouter un like pour le moment.");
+                const postElement = document.querySelector(`.post[data-id="${postId}"]`);
+                if (postElement) {
+                    const likeCount = postElement.querySelector('.like-count');
+                    if (likeCount) likeCount.textContent = targetPost.likes;
+                    triggerLikeBurst(postElement);
+                }
                 return;
+            } catch (error) {
+                if (shouldQueueOfflineAction(error)) {
+                    const queued = queueReseauAction('reseau.likePost', {
+                        postId: Number(postId)
+                    });
+                    if (queued) {
+                        targetPost.likes = (targetPost.likes || 0) + 1;
+                        writePosts(posts);
+                        const postElement = document.querySelector(`.post[data-id="${postId}"]`);
+                        if (postElement) {
+                            const likeCount = postElement.querySelector('.like-count');
+                            if (likeCount) likeCount.textContent = targetPost.likes;
+                            triggerLikeBurst(postElement);
+                        }
+                        return;
+                    }
+                }
+                alert("Impossible d'ajouter un like pour le moment.");
             }
-
-            targetPost.likes = nextLikes;
-            writePosts(posts);
-            notifyLikeOnPost(targetPost, getCurrentUserName());
-            
-            const postElement = document.querySelector(`.post[data-id="${postId}"]`);
-            if (postElement) {
-                const likeCount = postElement.querySelector('.like-count');
-                if (likeCount) likeCount.textContent = targetPost.likes;
-                triggerLikeBurst(postElement);
-            }
-            return;
         }
 
         posts[postIndex].likes = (posts[postIndex].likes || 0) + 1;
@@ -1151,9 +1355,14 @@ function applyGuestRestrictions() {
 
 // ==================== INITIALISATION ====================
 document.addEventListener('DOMContentLoaded', async () => {
+    registerReseauOfflineProcessors();
     initNativeReseauExperience();
     initEmojiPicker();
     applyGuestRestrictions();
     await loadPosts();
     updateNativeReseauDrawerLinks();
+    const queue = getOfflineQueue();
+    if (queue && typeof queue.flush === 'function') {
+        queue.flush().catch(() => {});
+    }
 });

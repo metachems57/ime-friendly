@@ -30,6 +30,39 @@
         return !!getSupabaseClient();
     }
 
+    function getOfflineQueue() {
+        return window.offlineActionQueue || null;
+    }
+
+    function shouldQueueOfflineAction(error) {
+        const queue = getOfflineQueue();
+        if (navigator.onLine === false) return true;
+        if (!queue || typeof queue.isLikelyNetworkError !== 'function') return false;
+        return queue.isLikelyNetworkError(error);
+    }
+
+    function queueMessagingAction(type, payload) {
+        const queue = getOfflineQueue();
+        if (!queue || typeof queue.enqueue !== 'function') return false;
+        const currentUser = getCurrentUser();
+        queue.enqueue({
+            type,
+            payload,
+            meta: {
+                userEmail: String(currentUser?.email || '').trim().toLowerCase(),
+                userName: String(currentUser?.name || '').trim()
+            }
+        });
+        return true;
+    }
+
+    function isQueueActionForCurrentUser(item) {
+        const itemEmail = String(item?.meta?.userEmail || '').trim().toLowerCase();
+        if (!itemEmail) return true;
+        const currentEmail = String(getCurrentUser()?.email || '').trim().toLowerCase();
+        return !!currentEmail && currentEmail === itemEmail;
+    }
+
     function readLastSyncTimestamp() {
         const rawValue = localStorage.getItem(SYNC_STORAGE_KEY) || '';
         const timestamp = Date.parse(rawValue);
@@ -414,6 +447,61 @@
         }
     }
 
+    async function insertPrivateMessageToSupabase(payload) {
+        const supabase = getSupabaseClient();
+        if (!supabase) throw new Error('supabase_unavailable');
+
+        const fromUserId = getUserIdByName(payload?.from);
+        const toUserId = getUserIdByName(payload?.to);
+        const content = String(payload?.text || '').trim();
+        if (!fromUserId || !toUserId || !content) {
+            throw new Error('invalid_payload');
+        }
+
+        const { data, error } = await supabase
+            .from('private_messages')
+            .insert({
+                from_user_id: fromUserId,
+                to_user_id: toUserId,
+                content
+            })
+            .select('id, created_at')
+            .single();
+
+        if (error || !data) {
+            throw new Error(error?.message || 'message_insert_failed');
+        }
+
+        return {
+            id: Number(data.id),
+            createdAt: data.created_at || new Date().toISOString()
+        };
+    }
+
+    function registerMessagingOfflineProcessors() {
+        const queue = getOfflineQueue();
+        if (!queue || typeof queue.registerProcessor !== 'function') return;
+
+        queue.registerProcessor('messaging.sendMessage', async (item) => {
+            if (!isQueueActionForCurrentUser(item)) return { retry: true };
+            const payload = item?.payload || {};
+            const save = await insertPrivateMessageToSupabase(payload);
+
+            const localId = Number(payload.localId);
+            if (Number.isFinite(localId)) {
+                const nextMessages = readMessages();
+                const target = nextMessages.find((message) => Number(message.id) === localId);
+                if (target) {
+                    target.id = Number.isFinite(save.id) ? save.id : target.id;
+                    target.createdAt = save.createdAt || target.createdAt;
+                    writeMessages(nextMessages);
+                }
+            }
+
+            return { ok: true };
+        });
+    }
+
     function sendMessage(payload) {
         const from = normalizeName(getCurrentUserName());
         const to = normalizeName(payload && payload.to);
@@ -461,38 +549,34 @@
         writeMessages(messages);
 
         if (isSupabaseReady()) {
-            const supabase = getSupabaseClient();
-            const fromUserId = getUserIdByName(from);
-            const toUserId = getUserIdByName(finalTo);
+            insertPrivateMessageToSupabase({
+                from,
+                to: finalTo,
+                text
+            })
+                .then((save) => {
+                    const nextMessages = readMessages();
+                    const localMessage = nextMessages.find((item) => Number(item.id) === tempId);
+                    if (!localMessage) return;
 
-            if (supabase && fromUserId && toUserId) {
-                supabase
-                    .from('private_messages')
-                    .insert({
-                        from_user_id: fromUserId,
-                        to_user_id: toUserId,
-                        content: text
-                    })
-                    .select('id, created_at')
-                    .single()
-                    .then(({ data, error }) => {
-                        if (error || !data) return;
-
-                        const savedId = Number(data.id);
-                        const nextMessages = readMessages();
-                        const localMessage = nextMessages.find((item) => Number(item.id) === tempId);
-                        if (!localMessage) return;
-
-                        if (Number.isFinite(savedId)) {
-                            localMessage.id = savedId;
-                        }
-                        if (data.created_at) {
-                            localMessage.createdAt = data.created_at;
-                        }
-                        writeMessages(nextMessages);
-                    })
-                    .catch(() => {});
-            }
+                    if (Number.isFinite(save.id)) {
+                        localMessage.id = save.id;
+                    }
+                    if (save.createdAt) {
+                        localMessage.createdAt = save.createdAt;
+                    }
+                    writeMessages(nextMessages);
+                })
+                .catch((error) => {
+                    if (shouldQueueOfflineAction(error)) {
+                        queueMessagingAction('messaging.sendMessage', {
+                            localId: tempId,
+                            from,
+                            to: finalTo,
+                            text
+                        });
+                    }
+                });
         }
 
         return {
@@ -1019,8 +1103,13 @@
         syncAllFromSupabase
     };
 
+    registerMessagingOfflineProcessors();
     ensureDataShape();
     queueBackgroundSync();
+    const queue = getOfflineQueue();
+    if (queue && typeof queue.flush === 'function') {
+        queue.flush().catch(() => {});
+    }
 
     window.addEventListener('focus', () => {
         queueBackgroundSync();

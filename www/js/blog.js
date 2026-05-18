@@ -2,6 +2,10 @@ const BLOG_POSTS_KEY = 'blogposts';
 let runtimeBlogPosts = [];
 let runtimeBlogPostsLoaded = false;
 let nativeBlogDrawerReady = false;
+let nativeBlogRenderedCount = 0;
+let nativeBlogScrollHandler = null;
+const NATIVE_BLOG_INITIAL_BATCH = 10;
+const NATIVE_BLOG_BATCH = 8;
 
 function isNativeAppRuntime() {
     try {
@@ -166,12 +170,17 @@ function initNativeBlogExperience() {
     // CONTRÔLE DE L'ÉTAT DE L'UTILISATEUR ET DE LA SÉCURITÉ
     // =========================================================================
 document.addEventListener('DOMContentLoaded', async function() {
+    registerBlogOfflineProcessors();
     initNativeBlogExperience();
     applyGuestRestrictions();
     initEventDateFieldVisibility();
     initSearchControls();
     await loadPosts();
     updateNativeBlogDrawerLinks();
+    const queue = getOfflineQueue();
+    if (queue && typeof queue.flush === 'function') {
+        queue.flush().catch(() => {});
+    }
 });
 
 function getConnectedUser() {
@@ -188,6 +197,39 @@ function getConnectedUser() {
         role: localStorage.getItem('userRole') || '',
         email: localStorage.getItem('userEmail') || ''
     };
+}
+
+function getOfflineQueue() {
+    return window.offlineActionQueue || null;
+}
+
+function shouldQueueOfflineAction(error) {
+    const queue = getOfflineQueue();
+    if (navigator.onLine === false) return true;
+    if (!queue || typeof queue.isLikelyNetworkError !== 'function') return false;
+    return queue.isLikelyNetworkError(error);
+}
+
+function queueBlogAction(type, payload) {
+    const queue = getOfflineQueue();
+    if (!queue || typeof queue.enqueue !== 'function') return false;
+    const user = getConnectedUser();
+    queue.enqueue({
+        type,
+        payload,
+        meta: {
+            userEmail: String(user?.email || '').trim().toLowerCase(),
+            userName: String(user?.name || '').trim()
+        }
+    });
+    return true;
+}
+
+function isQueueActionForCurrentUser(item) {
+    const itemEmail = String(item?.meta?.userEmail || '').trim().toLowerCase();
+    if (!itemEmail) return true;
+    const currentEmail = String(getConnectedUser()?.email || '').trim().toLowerCase();
+    return !!currentEmail && currentEmail === itemEmail;
 }
 
 function isUserLoggedIn() {
@@ -499,6 +541,84 @@ async function fetchSupabaseBlogPosts() {
     });
 
     return { ok: true, posts };
+}
+
+async function insertBlogPostToSupabase(postData) {
+    const supabase = getSupabaseClient();
+    const authorId = await getCurrentSupabaseUserId();
+    if (!supabase || !authorId) {
+        throw new Error('auth_unavailable');
+    }
+
+    const payload = {
+        author_id: authorId,
+        title: String(postData?.title || '').trim(),
+        content: String(postData?.content || '').trim(),
+        category: String(postData?.category || 'general').trim().toLowerCase(),
+        event_date: postData?.eventDate || null
+    };
+
+    const { data, error } = await supabase
+        .from('blog_posts')
+        .insert(payload)
+        .select('id, created_at')
+        .single();
+
+    if (error) {
+        throw new Error(error.message || 'insert_blog_post_failed');
+    }
+
+    return {
+        id: Number(data?.id) || Date.now(),
+        createdAt: data?.created_at || new Date().toISOString()
+    };
+}
+
+async function insertBlogCommentToSupabase(postId, commentText) {
+    const supabase = getSupabaseClient();
+    const authorId = await getCurrentSupabaseUserId();
+    if (!supabase || !authorId) {
+        throw new Error('auth_unavailable');
+    }
+
+    const { error } = await supabase.from('blog_comments').insert({
+        post_id: Number(postId),
+        author_id: authorId,
+        content: String(commentText || '').trim()
+    });
+
+    if (error) {
+        throw new Error(error.message || 'insert_blog_comment_failed');
+    }
+
+    return true;
+}
+
+function registerBlogOfflineProcessors() {
+    const queue = getOfflineQueue();
+    if (!queue || typeof queue.registerProcessor !== 'function') return;
+
+    queue.registerProcessor('blog.createPost', async (item) => {
+        if (!isQueueActionForCurrentUser(item)) return { retry: true };
+        const payload = item?.payload || {};
+        const saveResult = await insertBlogPostToSupabase(payload);
+        if (payload?.eventDate) {
+            upsertAgendaEventFromBlogPost({
+                id: saveResult.id,
+                title: payload.title || '',
+                category: payload.category || '',
+                eventDate: payload.eventDate
+            });
+        }
+        return { ok: true };
+    });
+
+    queue.registerProcessor('blog.addComment', async (item) => {
+        if (!isQueueActionForCurrentUser(item)) return { retry: true };
+        const payload = item?.payload || {};
+        await insertBlogCommentToSupabase(payload.postId, payload.commentText);
+        return { ok: true };
+    });
 }
 
 function getPostNotificationTitle(post) {
@@ -972,6 +1092,69 @@ function applyGuestRestrictions() {
     }
 }
 
+function hasBlogHighlightTargetInUrl() {
+    const query = new URLSearchParams(window.location.search || '');
+    return (
+        query.has('highlightPost') ||
+        query.has('highlightDate') ||
+        query.has('highlightTitle') ||
+        !!window.location.hash
+    );
+}
+
+function renderBlogSkeleton(postsContainer, count = 3) {
+    postsContainer.innerHTML = '';
+    for (let i = 0; i < count; i += 1) {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'post blog-skeleton';
+        skeleton.innerHTML = `
+            <div class="skeleton-line skeleton-line-lg"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line-sm"></div>
+        `;
+        postsContainer.appendChild(skeleton);
+    }
+}
+
+function appendBlogPostsBatch(postsContainer, posts, startIndex, batchSize) {
+    let index = startIndex;
+    const limit = Math.min(posts.length, startIndex + batchSize);
+    while (index < limit) {
+        const postElement = createPostElement(posts[index]);
+        if (postElement) postsContainer.appendChild(postElement);
+        index += 1;
+    }
+    nativeBlogRenderedCount = index;
+}
+
+function clearBlogInfiniteScroll() {
+    if (!nativeBlogScrollHandler) return;
+    window.removeEventListener('scroll', nativeBlogScrollHandler);
+    nativeBlogScrollHandler = null;
+}
+
+function setupBlogInfiniteScroll(postsContainer, posts) {
+    clearBlogInfiniteScroll();
+
+    const allowBatchMode = isNativeAppRuntime() && posts.length > NATIVE_BLOG_INITIAL_BATCH && !hasBlogHighlightTargetInUrl();
+    if (!allowBatchMode) return;
+
+    nativeBlogScrollHandler = () => {
+        if (nativeBlogRenderedCount >= posts.length) {
+            clearBlogInfiniteScroll();
+            return;
+        }
+
+        const scrollBottom = window.scrollY + window.innerHeight;
+        const pageBottom = document.documentElement.scrollHeight - 200;
+        if (scrollBottom < pageBottom) return;
+
+        appendBlogPostsBatch(postsContainer, posts, nativeBlogRenderedCount, NATIVE_BLOG_BATCH);
+    };
+
+    window.addEventListener('scroll', nativeBlogScrollHandler, { passive: true });
+}
+
     // =========================================================================
     // GESTION DES POSTS (CRÉATION, AFFICHAGE, SUPPRESSION)
     // =========================================================================
@@ -980,6 +1163,9 @@ function applyGuestRestrictions() {
     async function loadPosts() {
         const postsContainer = document.getElementById('postsContainer');
         if (!postsContainer) return;
+
+        renderBlogSkeleton(postsContainer, isNativeAppRuntime() ? 4 : 3);
+        await Promise.resolve();
 
         let posts = [];
         if (isSupabaseReady()) {
@@ -1014,21 +1200,24 @@ function applyGuestRestrictions() {
         posts = filterBlogPosts(posts);
 
         postsContainer.innerHTML = '';
+        nativeBlogRenderedCount = 0;
 
         if (posts.length === 0) {
+            clearBlogInfiniteScroll();
             const emptyNode = document.createElement('p');
             emptyNode.className = 'posts-empty';
             emptyNode.textContent = 'Aucun sujet ne correspond à votre recherche.';
             postsContainer.appendChild(emptyNode);
             return;
         }
-        
-        posts.forEach(post => {
-            const postElement = createPostElement(post);
-            if (postElement) {
-                postsContainer.appendChild(postElement);
-            }
-        });
+
+        if (isNativeAppRuntime() && posts.length > NATIVE_BLOG_INITIAL_BATCH && !hasBlogHighlightTargetInUrl()) {
+            appendBlogPostsBatch(postsContainer, posts, 0, NATIVE_BLOG_INITIAL_BATCH);
+            setupBlogInfiniteScroll(postsContainer, posts);
+        } else {
+            clearBlogInfiniteScroll();
+            appendBlogPostsBatch(postsContainer, posts, 0, posts.length);
+        }
 
         highlightPostsFromUrl();
     }
@@ -1199,28 +1388,27 @@ async function deletePost(postId) {
                 const previousAuthors = targetPost.comments.map((comment) => comment?.author).filter(Boolean);
 
                 if (isSupabaseReady()) {
-                    const supabase = getSupabaseClient();
-                    const authorId = await getCurrentSupabaseUserId();
-                    if (!supabase || !authorId) {
+                    try {
+                        await insertBlogCommentToSupabase(postId, commentText);
+                        notifyCommentOnBlogPost(targetPost, author, previousAuthors);
+                        await loadPosts();
+                        input.value = '';
+                        return;
+                    } catch (error) {
+                        if (shouldQueueOfflineAction(error)) {
+                            const queued = queueBlogAction('blog.addComment', {
+                                postId: Number(postId),
+                                commentText: String(commentText || '')
+                            });
+                            if (queued) {
+                                input.value = '';
+                                alert("Pas de réseau: commentaire mis en file d'attente.");
+                                return;
+                            }
+                        }
                         alert("Impossible d'ajouter le commentaire pour le moment.");
                         return;
                     }
-
-                    const { error } = await supabase.from('blog_comments').insert({
-                        post_id: Number(postId),
-                        author_id: authorId,
-                        content: commentText
-                    });
-
-                    if (error) {
-                        alert("Impossible d'ajouter le commentaire pour le moment.");
-                        return;
-                    }
-
-                    notifyCommentOnBlogPost(targetPost, author, previousAuthors);
-                    await loadPosts();
-                    input.value = '';
-                    return;
                 }
 
                 const newComment = { author, text: commentText, date: date };
@@ -1327,45 +1515,41 @@ async function deletePost(postId) {
         };
         
         if (isSupabaseReady()) {
-            const supabase = getSupabaseClient();
-            const authorId = await getCurrentSupabaseUserId();
-            if (!supabase || !authorId) {
-                alert("Impossible de publier pour le moment.");
+            try {
+                const saved = await insertBlogPostToSupabase(newPost);
+                newPost.id = saved.id;
+                newPost.createdAt = saved.createdAt;
+                newPost.date = formatPostDate(newPost.createdAt);
+
+                if (newPost.eventDate) {
+                    upsertAgendaEventFromBlogPost(newPost);
+                }
+
+                await loadPosts();
+                this.reset();
+                updateEventDateFieldVisibility();
+                if (isNativeAppRuntime()) closeNativeBlogCreatePanel();
                 return;
-            }
+            } catch (error) {
+                if (shouldQueueOfflineAction(error)) {
+                    const queued = queueBlogAction('blog.createPost', {
+                        title: String(newPost.title || ''),
+                        content: String(newPost.content || ''),
+                        category: String(newPost.category || 'general'),
+                        eventDate: newPost.eventDate || ''
+                    });
 
-            const payload = {
-                author_id: authorId,
-                title: String(newPost.title || '').trim(),
-                content: String(newPost.content || '').trim(),
-                category: String(newPost.category || 'general').trim().toLowerCase(),
-                event_date: newPost.eventDate || null
-            };
-
-            const { data, error } = await supabase
-                .from('blog_posts')
-                .insert(payload)
-                .select('id, created_at')
-                .single();
-
-            if (error) {
+                    if (queued) {
+                        this.reset();
+                        updateEventDateFieldVisibility();
+                        if (isNativeAppRuntime()) closeNativeBlogCreatePanel();
+                        alert("Pas de réseau: publication mise en file d'attente.");
+                        return;
+                    }
+                }
                 alert("Publication impossible pour le moment.");
                 return;
             }
-
-            newPost.id = Number(data?.id) || Date.now();
-            newPost.createdAt = data?.created_at || nowIso;
-            newPost.date = formatPostDate(newPost.createdAt);
-
-            if (newPost.eventDate) {
-                upsertAgendaEventFromBlogPost(newPost);
-            }
-
-            await loadPosts();
-            this.reset();
-            updateEventDateFieldVisibility();
-            if (isNativeAppRuntime()) closeNativeBlogCreatePanel();
-            return;
         }
 
         newPost.id = Date.now();

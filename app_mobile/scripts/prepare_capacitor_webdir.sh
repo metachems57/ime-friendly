@@ -20,4 +20,23 @@ rsync -a \
   --exclude '*.log' \
   "${ROOT_DIR}/" "${WWW_DIR}/"
 
+PUSH_CONFIG_FILE="${ROOT_DIR}/android/app/google-services.json"
+RUNTIME_CONFIG_FILE="${WWW_DIR}/app-runtime-config.json"
+
+if [[ -f "${PUSH_CONFIG_FILE}" ]]; then
+  cat > "${RUNTIME_CONFIG_FILE}" <<'EOF'
+{
+  "nativePushCapable": true,
+  "reason": "google-services.json_present"
+}
+EOF
+else
+  cat > "${RUNTIME_CONFIG_FILE}" <<'EOF'
+{
+  "nativePushCapable": false,
+  "reason": "google-services.json_missing"
+}
+EOF
+fi
+
 echo "Done. Files copied to www/."
