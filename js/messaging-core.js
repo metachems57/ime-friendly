@@ -1057,6 +1057,13 @@
         if (syncInFlight) return syncInFlight;
 
         syncInFlight = (async () => {
+            if (window.supabaseSync && typeof window.supabaseSync.syncUsers === 'function') {
+                await Promise.race([
+                    window.supabaseSync.syncUsers(),
+                    new Promise((resolve) => setTimeout(resolve, 2000))
+                ]);
+            }
+
             await Promise.allSettled([
                 syncMessagesFromSupabase(),
                 syncReportsFromSupabase(),
