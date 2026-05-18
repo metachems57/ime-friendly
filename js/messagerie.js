@@ -708,7 +708,14 @@ function initEvents() {
         }
     });
 
-    window.setInterval(() => {
+    window.setInterval(async () => {
+        if (window.messagingCore && typeof window.messagingCore.syncAllFromSupabase === 'function') {
+            try {
+                await window.messagingCore.syncAllFromSupabase({ maxAgeMs: 0 });
+            } catch (error) {
+                // fallback local
+            }
+        }
         syncConversations(state.activePartnerName);
     }, 5000);
 }
@@ -716,11 +723,22 @@ function initEvents() {
 document.addEventListener('DOMContentLoaded', async () => {
     if (!requireConnectedUser()) return;
 
+    if (window.supabaseSync && typeof window.supabaseSync.syncUsers === 'function') {
+        try {
+            await Promise.race([
+                window.supabaseSync.syncUsers(),
+                new Promise((resolve) => setTimeout(resolve, 2000))
+            ]);
+        } catch (error) {
+            // Fallback local silencieux.
+        }
+    }
+
     if (window.messagingCore && typeof window.messagingCore.syncAllFromSupabase === 'function') {
         try {
             await Promise.race([
                 window.messagingCore.syncAllFromSupabase({ force: true, maxAgeMs: 0 }),
-                new Promise((resolve) => setTimeout(resolve, 1200))
+                new Promise((resolve) => setTimeout(resolve, 3500))
             ]);
         } catch (error) {
             // Fallback local silencieux.
