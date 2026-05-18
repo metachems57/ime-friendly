@@ -18,6 +18,34 @@ function refreshHomeAfterSupabaseSync() {
     initImeProfileCarousel();
 }
 
+function getNativeVieAvatarContainers() {
+    const ids = ['nativeVieAvatars', 'appV2NativeVieAvatars'];
+    return ids
+        .map((id) => document.getElementById(id))
+        .filter((node) => node);
+}
+
+function getNativeVieCalendarConfigs() {
+    return [
+        {
+            monthId: 'nativeVieCalendarMonthLabel',
+            gridId: 'nativeVieCalendarGrid',
+            tooltipId: 'nativeVieTooltip',
+            tooltipLinkId: 'nativeVieTooltipLink',
+            dayClassName: 'native-vie-day',
+            boundFlag: 'nativeTooltipBound'
+        },
+        {
+            monthId: 'appV2NativeVieCalendarMonthLabel',
+            gridId: 'appV2NativeVieCalendarGrid',
+            tooltipId: 'appV2NativeVieTooltip',
+            tooltipLinkId: 'appV2NativeVieTooltipLink',
+            dayClassName: 'app-v2-vie-day',
+            boundFlag: 'nativeTooltipBoundV2'
+        }
+    ];
+}
+
 // Vérifier l'état de connexion au chargement de la page
 document.addEventListener('DOMContentLoaded', async function() {
     if (window.supabaseSync && typeof window.supabaseSync.syncAll === 'function') {
@@ -77,6 +105,24 @@ function setGuestMode(enabled) {
     } else {
         localStorage.setItem('imeGuestMode', value);
     }
+}
+
+function setNativeIntroPassed(enabled) {
+    const value = enabled ? 'true' : 'false';
+    if (window.dataStore && typeof window.dataStore.writeValue === 'function') {
+        window.dataStore.writeValue('imeNativeIntroPassed', value);
+    } else {
+        localStorage.setItem('imeNativeIntroPassed', value);
+    }
+}
+
+function isNativeIntroPassed() {
+    const fallback = localStorage.getItem('imeNativeIntroPassed');
+    if (window.dataStore && typeof window.dataStore.readValue === 'function') {
+        const value = window.dataStore.readValue('imeNativeIntroPassed', fallback);
+        return String(value || '').toLowerCase() === 'true';
+    }
+    return String(fallback || '').toLowerCase() === 'true';
 }
 
 function isGuestModeEnabled() {
@@ -255,6 +301,12 @@ function handleNativeLoginResult(result) {
 function initNativeAppExperience() {
     if (!isNativeAppRuntime()) return;
 
+    try {
+        localStorage.setItem('imeNativeRuntime', '1');
+    } catch (error) {
+        // ignore quota/private mode issues
+    }
+
     document.documentElement.classList.remove('native-preload');
     document.body.classList.add('is-native-app');
     initNativeHomeChrome();
@@ -280,15 +332,18 @@ function initNativeAppExperience() {
     const connectedUser = getConnectedUser();
     const hasConnectedIdentity = !!(connectedUser && (connectedUser.email || connectedUser.name));
     const guestMode = isGuestModeEnabled();
+    const introAlreadyPassed = isNativeIntroPassed();
 
-    if (!hasConnectedIdentity && !fromAppNavigation) {
+    if (!hasConnectedIdentity && !fromAppNavigation && !guestMode && !introAlreadyPassed) {
         window.location.href = 'ouverture.html';
         return;
     }
 
     if (hasConnectedIdentity) {
+        setNativeIntroPassed(true);
         hideNativeIntro();
-    } else if (fromAppNavigation || guestMode) {
+    } else if (fromAppNavigation || guestMode || introAlreadyPassed) {
+        setNativeIntroPassed(true);
         hideNativeIntro();
     } else {
         showNativeIntro();
@@ -338,6 +393,7 @@ function initNativeAppExperience() {
         if (!handleNativeLoginResult(result)) return;
 
         setGuestMode(false);
+        setNativeIntroPassed(true);
         showConnectedState(result.user.email);
         hideNativeIntro();
         updateNativeDrawerLinks();
@@ -351,6 +407,7 @@ function initNativeAppExperience() {
     guestLinkNode.addEventListener('click', (event) => {
         event.preventDefault();
         setGuestMode(true);
+        setNativeIntroPassed(true);
         showNotConnectedState();
         hideNativeIntro();
         updateNativeDrawerLinks();
@@ -459,8 +516,8 @@ function renderImeProfileAvatars() {
 }
 
 function renderNativeVieAvatars() {
-    const containerNode = document.getElementById('nativeVieAvatars');
-    if (!containerNode) return;
+    const containerNodes = getNativeVieAvatarContainers();
+    if (containerNodes.length === 0) return;
 
     const users = getStorageArray('users');
     const profilePhotos = getStorageObject('profilePhotos');
@@ -480,46 +537,43 @@ function renderNativeVieAvatars() {
         });
     });
 
-    containerNode.innerHTML = '';
+    containerNodes.forEach((containerNode) => {
+        containerNode.innerHTML = '';
 
-    const maxAvatars = 5;
-    for (let index = 0; index < maxAvatars; index += 1) {
-        const user = uniqueUsers[index];
-        const avatarNode = document.createElement('a');
-        avatarNode.className = 'native-vie-avatar';
+        const maxAvatars = 5;
+        for (let index = 0; index < maxAvatars; index += 1) {
+            const user = uniqueUsers[index];
+            const avatarNode = document.createElement('a');
+            avatarNode.className = containerNode.id === 'appV2NativeVieAvatars' ? 'app-v2-vie-avatar' : 'native-vie-avatar';
 
-        if (user) {
-            avatarNode.href = `profil.html?user=${encodeURIComponent(user.name)}`;
-            avatarNode.setAttribute('aria-label', `Profil de ${user.name}`);
-            if (isSafeProfileImage(user.photo)) {
-                const imgNode = document.createElement('img');
-                imgNode.src = user.photo;
-                imgNode.alt = `Photo de ${user.name}`;
-                avatarNode.appendChild(imgNode);
+            if (user) {
+                avatarNode.href = `profil.html?user=${encodeURIComponent(user.name)}`;
+                avatarNode.setAttribute('aria-label', `Profil de ${user.name}`);
+                if (isSafeProfileImage(user.photo)) {
+                    const imgNode = document.createElement('img');
+                    imgNode.src = user.photo;
+                    imgNode.alt = `Photo de ${user.name}`;
+                    avatarNode.appendChild(imgNode);
+                } else {
+                    const initialsNode = document.createElement('span');
+                    initialsNode.textContent = initialsFromName(user.name);
+                    avatarNode.appendChild(initialsNode);
+                }
             } else {
-                const initialsNode = document.createElement('span');
-                initialsNode.textContent = initialsFromName(user.name);
-                avatarNode.appendChild(initialsNode);
+                avatarNode.href = 'profil.html';
+                avatarNode.setAttribute('aria-label', 'Profil intervenant');
+                const emptyNode = document.createElement('span');
+                emptyNode.textContent = '';
+                avatarNode.appendChild(emptyNode);
             }
-        } else {
-            avatarNode.href = 'profil.html';
-            avatarNode.setAttribute('aria-label', 'Profil intervenant');
-            const emptyNode = document.createElement('span');
-            emptyNode.textContent = '';
-            avatarNode.appendChild(emptyNode);
-        }
 
-        containerNode.appendChild(avatarNode);
-    }
+            containerNode.appendChild(avatarNode);
+        }
+    });
 }
 
 function renderNativeVieCalendar(referenceDate = new Date()) {
-    const monthNode = document.getElementById('nativeVieCalendarMonthLabel');
-    const gridNode = document.getElementById('nativeVieCalendarGrid');
-    const calendarNode = gridNode ? gridNode.closest('.native-vie-calendar') : null;
-    const tooltipNode = document.getElementById('nativeVieTooltip');
-    const tooltipLinkNode = document.getElementById('nativeVieTooltipLink');
-    if (!monthNode || !gridNode || !calendarNode || !tooltipNode || !tooltipLinkNode) return;
+    const configs = getNativeVieCalendarConfigs();
 
     const year = referenceDate.getFullYear();
     const monthIndex = referenceDate.getMonth();
@@ -529,102 +583,110 @@ function renderNativeVieCalendar(referenceDate = new Date()) {
     const eventsByDay = getAgendaEventsByDay(year, monthIndex);
 
     const monthLabel = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(firstDay);
-    monthNode.textContent = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-    gridNode.innerHTML = '';
-    tooltipNode.hidden = true;
-    tooltipLinkNode.textContent = '';
-    tooltipLinkNode.removeAttribute('href');
+    const normalizedMonthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
-    const hideTooltip = () => {
+    configs.forEach((config) => {
+        const monthNode = document.getElementById(config.monthId);
+        const gridNode = document.getElementById(config.gridId);
+        const tooltipNode = document.getElementById(config.tooltipId);
+        const tooltipLinkNode = document.getElementById(config.tooltipLinkId);
+        const calendarNode = gridNode ? gridNode.parentElement : null;
+        if (!monthNode || !gridNode || !calendarNode || !tooltipNode || !tooltipLinkNode) return;
+
+        monthNode.textContent = normalizedMonthLabel;
+        gridNode.innerHTML = '';
         tooltipNode.hidden = true;
         tooltipLinkNode.textContent = '';
         tooltipLinkNode.removeAttribute('href');
-    };
 
-    const showTooltip = (title, href, anchorNode) => {
-        const cleanTitle = String(title || 'Voir l’activité').trim();
-        const cleanHref = String(href || 'blog.html').trim();
-        tooltipLinkNode.textContent = cleanTitle;
-        tooltipLinkNode.href = cleanHref;
-        tooltipNode.hidden = false;
+        const hideTooltip = () => {
+            tooltipNode.hidden = true;
+            tooltipLinkNode.textContent = '';
+            tooltipLinkNode.removeAttribute('href');
+        };
 
-        const calendarRect = calendarNode.getBoundingClientRect();
-        const anchorRect = anchorNode.getBoundingClientRect();
-        const topPreferred = anchorRect.top - calendarRect.top - 42;
-        const topFallback = anchorRect.bottom - calendarRect.top + 4;
-        const top = topPreferred < 2 ? topFallback : topPreferred;
-        const leftCenter = anchorRect.left - calendarRect.left + (anchorRect.width / 2);
-        const maxLeft = Math.max(4, calendarNode.clientWidth - tooltipNode.offsetWidth - 4);
-        const left = Math.min(maxLeft, Math.max(4, leftCenter - (tooltipNode.offsetWidth / 2)));
-        tooltipNode.style.top = `${Math.round(top)}px`;
-        tooltipNode.style.left = `${Math.round(left)}px`;
-    };
+        const showTooltip = (title, href, anchorNode) => {
+            const cleanTitle = String(title || 'Voir l’activité').trim();
+            const cleanHref = String(href || 'blog.html').trim();
+            tooltipLinkNode.textContent = cleanTitle;
+            tooltipLinkNode.href = cleanHref;
+            tooltipNode.hidden = false;
 
-    for (let i = 0; i < firstDayMondayBased; i += 1) {
-        const emptyNode = document.createElement('span');
-        emptyNode.className = 'native-vie-day is-empty';
-        emptyNode.textContent = '';
-        gridNode.appendChild(emptyNode);
-    }
+            const calendarRect = calendarNode.getBoundingClientRect();
+            const anchorRect = anchorNode.getBoundingClientRect();
+            const topPreferred = anchorRect.top - calendarRect.top - 42;
+            const topFallback = anchorRect.bottom - calendarRect.top + 4;
+            const top = topPreferred < 2 ? topFallback : topPreferred;
+            const leftCenter = anchorRect.left - calendarRect.left + (anchorRect.width / 2);
+            const maxLeft = Math.max(4, calendarNode.clientWidth - tooltipNode.offsetWidth - 4);
+            const left = Math.min(maxLeft, Math.max(4, leftCenter - (tooltipNode.offsetWidth / 2)));
+            tooltipNode.style.top = `${Math.round(top)}px`;
+            tooltipNode.style.left = `${Math.round(left)}px`;
+        };
 
-    for (let day = 1; day <= daysInMonth; day += 1) {
-        const dayEvents = eventsByDay.get(day) || [];
-        const hasEvent = dayEvents.length > 0;
-        const dayNode = document.createElement(hasEvent ? 'button' : 'span');
-        dayNode.className = 'native-vie-day';
-        dayNode.textContent = String(day);
-
-        if (hasEvent) {
-            dayNode.classList.add('has-event');
-            if (dayNode instanceof HTMLButtonElement) {
-                dayNode.type = 'button';
-                const currentDateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const blogEvent = dayEvents.find((item) => item.source === 'blog' && Number.isFinite(item.sourcePostId));
-                const eventHref = blogEvent && Number.isFinite(blogEvent.sourcePostId)
-                    ? `blog.html?highlightPost=${encodeURIComponent(String(blogEvent.sourcePostId))}`
-                    : `blog.html?highlightDate=${encodeURIComponent(currentDateKey)}`;
-                const eventTitle = String(dayEvents[0]?.text || 'Voir l’activité');
-                dayNode.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    showTooltip(eventTitle, eventHref, dayNode);
-                });
-            }
+        for (let i = 0; i < firstDayMondayBased; i += 1) {
+            const emptyNode = document.createElement('span');
+            emptyNode.className = `${config.dayClassName} is-empty`;
+            emptyNode.textContent = '';
+            gridNode.appendChild(emptyNode);
         }
-        gridNode.appendChild(dayNode);
-    }
 
-    if (calendarNode.dataset.nativeTooltipBound !== '1') {
-        calendarNode.dataset.nativeTooltipBound = '1';
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const dayEvents = eventsByDay.get(day) || [];
+            const hasEvent = dayEvents.length > 0;
+            const dayNode = document.createElement(hasEvent ? 'button' : 'span');
+            dayNode.className = config.dayClassName;
+            dayNode.textContent = String(day);
 
-        calendarNode.addEventListener('click', (event) => {
-            const clickedDay = event.target instanceof Element ? event.target.closest('.native-vie-day.has-event') : null;
-            const clickedTooltip = event.target instanceof Element ? event.target.closest('#nativeVieTooltip') : null;
-            if (!clickedDay && !clickedTooltip) {
-                hideTooltip();
+            if (hasEvent) {
+                dayNode.classList.add('has-event');
+                if (dayNode instanceof HTMLButtonElement) {
+                    dayNode.type = 'button';
+                    const currentDateKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const blogEvent = dayEvents.find((item) => item.source === 'blog' && Number.isFinite(item.sourcePostId));
+                    const eventHref = blogEvent && Number.isFinite(blogEvent.sourcePostId)
+                        ? `blog.html?highlightPost=${encodeURIComponent(String(blogEvent.sourcePostId))}`
+                        : `blog.html?highlightDate=${encodeURIComponent(currentDateKey)}`;
+                    const eventTitle = String(dayEvents[0]?.text || 'Voir l’activité');
+                    dayNode.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        showTooltip(eventTitle, eventHref, dayNode);
+                    });
+                }
             }
-        });
+            gridNode.appendChild(dayNode);
+        }
 
-        calendarNode.addEventListener('touchstart', (event) => {
-            const touch = event.touches && event.touches[0];
-            nativeVieTooltipTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
-        }, { passive: true });
+        if (calendarNode.dataset[config.boundFlag] !== '1') {
+            calendarNode.dataset[config.boundFlag] = '1';
 
-        calendarNode.addEventListener('touchmove', (event) => {
-            if (!nativeVieTooltipTouchStart) return;
-            const touch = event.touches && event.touches[0];
-            if (!touch) return;
-            const deltaX = Math.abs(touch.clientX - nativeVieTooltipTouchStart.x);
-            const deltaY = Math.abs(touch.clientY - nativeVieTooltipTouchStart.y);
-            if (deltaX > 10 || deltaY > 10) {
-                hideTooltip();
-            }
-        }, { passive: true });
+            calendarNode.addEventListener('click', (event) => {
+                const daySelector = `.${config.dayClassName}.has-event`;
+                const clickedDay = event.target instanceof Element ? event.target.closest(daySelector) : null;
+                const clickedTooltip = event.target instanceof Element ? event.target.closest(`#${config.tooltipId}`) : null;
+                if (!clickedDay && !clickedTooltip) hideTooltip();
+            });
 
-        calendarNode.addEventListener('touchend', () => {
-            nativeVieTooltipTouchStart = null;
-        }, { passive: true });
-    }
+            calendarNode.addEventListener('touchstart', (event) => {
+                const touch = event.touches && event.touches[0];
+                nativeVieTooltipTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+            }, { passive: true });
+
+            calendarNode.addEventListener('touchmove', (event) => {
+                if (!nativeVieTooltipTouchStart) return;
+                const touch = event.touches && event.touches[0];
+                if (!touch) return;
+                const deltaX = Math.abs(touch.clientX - nativeVieTooltipTouchStart.x);
+                const deltaY = Math.abs(touch.clientY - nativeVieTooltipTouchStart.y);
+                if (deltaX > 10 || deltaY > 10) hideTooltip();
+            }, { passive: true });
+
+            calendarNode.addEventListener('touchend', () => {
+                nativeVieTooltipTouchStart = null;
+            }, { passive: true });
+        }
+    });
 }
 
 function initImeProfileCarousel() {
@@ -1377,6 +1439,15 @@ function renderHomepagePreviews() {
             buildPreviewSummary(lastReseauPost.author, reseauTitle),
             'Aucun post récent.'
         );
+        updateMediaPreview(
+            'appV2ReseauPreviewImg',
+            'appV2ReseauPreviewTitle',
+            lastReseauPost.image || '',
+            buildPreviewSummary(lastReseauPost.author, reseauTitle),
+            'Aucun post récent.'
+        );
+    } else {
+        updateMediaPreview('appV2ReseauPreviewImg', 'appV2ReseauPreviewTitle', '', '', 'Aucun post récent.');
     }
 
     const tools = getStorageArray('tools');
@@ -1391,6 +1462,15 @@ function renderHomepagePreviews() {
             buildPreviewSummary(lastTool.author, toolTitle),
             'Aucun contenu récent.'
         );
+        updateMediaPreview(
+            'appV2OutilsPreviewImg',
+            'appV2OutilsPreviewTitle',
+            toolImage,
+            buildPreviewSummary(lastTool.author, toolTitle),
+            'Aucun outil récent.'
+        );
+    } else {
+        updateMediaPreview('appV2OutilsPreviewImg', 'appV2OutilsPreviewTitle', '', '', 'Aucun outil récent.');
     }
 
     const blogPosts = getStorageArray('blogposts');
@@ -1415,6 +1495,15 @@ function renderHomepagePreviews() {
             buildPreviewSummary(lastBlogPost.author, lastBlogPost.title || lastBlogPost.content),
             'Aucun post récent.'
         );
+        const appV2BlogTitleNode = document.getElementById('appV2BlogPreviewTitle');
+        if (appV2BlogTitleNode) {
+            appV2BlogTitleNode.textContent = buildPreviewSummary(lastBlogPost.author, lastBlogPost.title || lastBlogPost.content);
+        }
+    } else {
+        const appV2BlogTitleNode = document.getElementById('appV2BlogPreviewTitle');
+        if (appV2BlogTitleNode) {
+            appV2BlogTitleNode.textContent = 'Aucun post récent.';
+        }
     }
 
     const viePreview = getLatestViePreviewSource();

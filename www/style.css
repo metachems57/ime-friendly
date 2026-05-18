@@ -1015,6 +1015,12 @@ html.native-preload .app-native-intro {
     color: #ffffff;
 }
 
+/* Sur index (Accueil app), on ne doit jamais voir l'écran d'ouverture.
+   L'écran d'ouverture vit sur ouverture.html uniquement. */
+html.native-preload body.page-home .app-native-intro {
+    display: none !important;
+}
+
 body.is-native-app .app-native-intro {
     position: fixed;
     inset: 0;
@@ -1300,7 +1306,9 @@ body.is-native-app header {
 }
 
 body.is-native-app .image-container {
-    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
     background: #3d95e9;
     background-image: linear-gradient(180deg, rgba(8, 82, 166, 0.22), rgba(8, 82, 166, 0.22)), url("images/fond page d'acceuil.png");
     background-size: cover;
@@ -1316,6 +1324,8 @@ body.is-native-app .image-container > .hero-background {
 
 body.is-native-app main {
     padding-top: 3.78rem;
+    height: calc(100dvh - 3.78rem);
+    overflow: hidden;
 }
 
 body.is-native-app .home-top-layout,
@@ -1385,9 +1395,7 @@ body.is-native-app .service-section .service-card.service-card-vie {
 
 body.is-native-app .service-card-blog {
     --native-blog-top-percent: 50; /* base */
-    orderAjouter google-services.json dans:
-    /home/chems/Documents/mon_site/android/app/google-services.json
-    Vérifier que le package Firebase = com.imefriendly.app.: 2;
+    order: 2;
     grid-area: blog;
     align-self: start;
     position: relative;
@@ -1649,6 +1657,257 @@ body.is-native-app .native-vie-tooltip a {
     line-height: 1.2;
     text-align: center;
     font-weight: 600;
+}
+
+/* ===== Accueil V2 (App Only) ===== */
+#appNativeHomeV2 {
+    display: none;
+}
+
+body.is-native-app #appNativeHomeV2 {
+    display: grid;
+    position: relative;
+    z-index: 2;
+    margin: 3.8rem 0.35rem 0.35rem;
+    padding: 0.28rem;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 0.32rem;
+    height: calc(100dvh - 4.2rem);
+    min-height: 0;
+    background-image:
+        linear-gradient(180deg, rgba(8, 82, 166, 0.16), rgba(8, 82, 166, 0.16)),
+        url("images/fond page d'acceuil.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Sur l'accueil natif V2, on neutralise la couche web située dessous
+   pour éviter la "deuxième image" après les cartes. */
+body.is-native-app #appNativeHomeV2 + .image-container {
+    min-height: 0 !important;
+    height: auto !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.is-native-app #appNativeHomeV2 + .image-container > .hero-background {
+    display: none !important;
+}
+
+body.is-native-app #appNativeHomeV2 + .image-container > main {
+    height: 0 !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    overflow: visible !important;
+}
+
+body.is-native-app.app-native-gate-active #appNativeHomeV2 {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.is-native-app .image-container > main > .home-top-layout,
+body.is-native-app .image-container > main > .service-section {
+    display: none !important;
+}
+
+body.is-native-app .app-v2-card {
+    background: rgba(15, 127, 232, 0.70);
+    color: #eef8ff;
+    border: 1px solid rgba(180, 228, 255, 0.38);
+    border-radius: 0;
+    box-shadow: 0 6px 18px rgba(6, 49, 98, 0.20);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    text-decoration: none;
+}
+
+body.is-native-app .app-v2-card h3 {
+    margin: 0;
+    text-align: center;
+    font-size: 2rem;
+    line-height: 1.02;
+    font-weight: 500;
+    color: #eef8ff;
+}
+
+body.is-native-app .app-v2-card-vie {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: 0.18rem;
+    padding: 0.14rem 0.36rem 0.36rem;
+    min-height: 350px;
+}
+
+body.is-native-app .app-v2-card-vie .app-v2-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+body.is-native-app .app-v2-vie-avatars {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    align-items: center;
+    justify-items: center;
+    min-height: 56px;
+}
+
+body.is-native-app .app-v2-vie-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: rgba(95, 169, 239, 0.95);
+    overflow: hidden;
+}
+
+body.is-native-app .app-v2-vie-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+body.is-native-app .app-v2-vie-avatar span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    line-height: 46px;
+    text-align: center;
+    font-size: 12px;
+    color: #dff3ff;
+}
+
+body.is-native-app .app-v2-vie-calendar {
+    position: relative;
+    width: 100%;
+    min-height: 0;
+    padding: 0.1rem 0.1rem 0.2rem;
+}
+
+body.is-native-app .app-v2-vie-calendar > p {
+    margin: 0 0 0.2rem;
+    text-align: center;
+    font-size: 1.08rem;
+    color: #daf0ff;
+}
+
+body.is-native-app .app-v2-vie-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+}
+
+body.is-native-app .app-v2-vie-day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 18px;
+    border-radius: 2px;
+    border: 0;
+    background: transparent;
+    color: rgba(231, 246, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    cursor: pointer;
+}
+
+body.is-native-app .app-v2-vie-day.is-empty {
+    opacity: 0.16;
+}
+
+body.is-native-app .app-v2-vie-day.has-event {
+    background: rgba(20, 98, 191, 0.86);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+body.is-native-app .app-v2-vie-tooltip {
+    position: absolute;
+    z-index: 8;
+    min-width: 120px;
+    max-width: calc(100% - 10px);
+    background: rgba(10, 62, 122, 0.96);
+    border: 1px solid rgba(156, 214, 255, 0.75);
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(9, 44, 92, 0.42);
+    padding: 0.3rem 0.45rem;
+}
+
+body.is-native-app .app-v2-vie-tooltip a {
+    display: block;
+    text-decoration: none;
+    color: #eaf7ff;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-align: center;
+    font-weight: 600;
+}
+
+body.is-native-app .app-v2-card-blog {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.16rem;
+    min-height: 86px;
+    padding: 0.35rem 0.4rem;
+    text-decoration: none;
+}
+
+body.is-native-app .app-v2-card-blog p {
+    margin: 0;
+    font-size: 1rem;
+    color: #e8f4ff;
+    text-align: center;
+}
+
+body.is-native-app .app-v2-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.34rem;
+    min-height: 0;
+}
+
+body.is-native-app .app-v2-card-reseau,
+body.is-native-app .app-v2-card-outils {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+    padding: 0.14rem 0.2rem 0.26rem;
+    text-decoration: none;
+}
+
+body.is-native-app .app-v2-media-preview {
+    margin-top: 0.08rem;
+    background: rgba(90, 172, 245, 0.28);
+    padding: 0.14rem;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-height: 0;
+}
+
+body.is-native-app .app-v2-media-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 110px;
+    object-fit: cover;
+    object-position: center;
+    background: rgba(110, 184, 245, 0.22);
+}
+
+body.is-native-app .app-v2-media-preview span {
+    margin-top: 0.18rem;
+    font-size: 0.84rem;
+    line-height: 1.18;
+    color: #e9f6ff;
+    text-align: center;
 }
 
 /* Modal de connexion */

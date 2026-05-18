@@ -6,7 +6,26 @@
 <script>
   (function () {
     var protocol = String(window.location.protocol || '');
-    if (protocol === 'capacitor:' || protocol === 'file:') {
+    var isNative = (protocol === 'capacitor:' || protocol === 'file:');
+    try {
+      if (!isNative && (window.Capacitor || window.__CAPACITOR__)) {
+        isNative = true;
+      }
+    } catch (e) {}
+    try {
+      if (!isNative) {
+        var params = new URLSearchParams(window.location.search || '');
+        if (params.get('fromApp') === '1' || params.get('fromOpen') === '1') {
+          isNative = true;
+        }
+      }
+    } catch (e) {}
+    try {
+      if (!isNative && window.localStorage && window.localStorage.getItem('imeNativeRuntime') === '1') {
+        isNative = true;
+      }
+    } catch (e) {}
+    if (isNative) {
       document.documentElement.classList.add('native-preload');
     }
   })();
@@ -25,7 +44,7 @@
 
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
-<body>
+<body class="page-home">
 <div id="appNativeIntro" class="app-native-intro" aria-hidden="true">
     <div class="app-native-intro-content">
         <h2>IME-Friendly</h2>
@@ -70,6 +89,45 @@
         <button id="appNativeAccessibilityLink" type="button">Accessibilité</button>
     </aside>
 </div>
+
+<section id="appNativeHomeV2" class="app-native-home-v2" aria-label="Accueil application">
+    <article class="app-v2-card app-v2-card-vie">
+        <a class="app-v2-card-link" href="teams.html">
+            <h3>Vie de l'IME</h3>
+        </a>
+        <div id="appV2NativeVieAvatars" class="app-v2-vie-avatars" aria-label="Aperçu des profils intervenants"></div>
+        <div class="app-v2-vie-calendar">
+            <p id="appV2NativeVieCalendarMonthLabel">Calendrier</p>
+            <div id="appV2NativeVieCalendarGrid" class="app-v2-vie-calendar-grid"></div>
+            <div id="appV2NativeVieTooltip" class="app-v2-vie-tooltip" hidden>
+                <a id="appV2NativeVieTooltipLink" href="blog.html">Voir l'activité</a>
+            </div>
+        </div>
+    </article>
+
+    <a class="app-v2-card app-v2-card-blog" href="blog.html">
+        <h3>Blog</h3>
+        <p id="appV2BlogPreviewTitle">Aucun post récent.</p>
+    </a>
+
+    <div class="app-v2-bottom-grid">
+        <a class="app-v2-card app-v2-card-reseau" href="reseau.html">
+            <h3>Réseau</h3>
+            <div class="app-v2-media-preview">
+                <img id="appV2ReseauPreviewImg" alt="Aperçu du dernier post réseau">
+                <span id="appV2ReseauPreviewTitle">Aucun post récent.</span>
+            </div>
+        </a>
+
+        <a class="app-v2-card app-v2-card-outils" href="outils.html">
+            <h3>Outils</h3>
+            <div class="app-v2-media-preview">
+                <img id="appV2OutilsPreviewImg" alt="Aperçu du dernier outil">
+                <span id="appV2OutilsPreviewTitle">Aucun outil récent.</span>
+            </div>
+        </a>
+    </div>
+</section>
 
 <div class="image-container">
     <img class="hero-background" src="images/fond page d'acceuil.png" alt="IME-Friendly - Toutes vos demandes méritent une réponse">
