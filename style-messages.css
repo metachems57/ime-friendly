@@ -42,38 +42,3 @@
 .profile-reports-badge[hidden] {
     display: none !important;
 }
-
-body.is-native-app button[class*="app-native-"][id$="MenuBtn"] {
-    position: relative;
-}
-
-.app-native-menu-badge {
-    position: absolute;
-    top: -0.18rem;
-    right: -0.18rem;
-    min-width: 1.1rem;
-    height: 1.1rem;
-    font-size: 0.66rem;
-    padding: 0 0.24rem;
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
-    z-index: 2;
-}
-
-body.is-native-app .app-native-drawer-link-with-badge {
-    position: relative;
-    padding-right: 1.8rem !important;
-}
-
-.app-native-drawer-badge {
-    position: absolute;
-    right: 0.34rem;
-    top: 50%;
-    transform: translateY(-50%);
-    min-width: 1.05rem;
-    height: 1.05rem;
-    font-size: 0.62rem;
-    padding: 0 0.22rem;
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-}
