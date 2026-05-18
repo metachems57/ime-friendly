@@ -1,6 +1,67 @@
 (function () {
     let refreshTimer = null;
 
+    function isNativeAppRuntime() {
+        try {
+            if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
+                return window.Capacitor.isNativePlatform();
+            }
+        } catch (error) {
+            // ignore
+        }
+
+        const protocol = String(window.location.protocol || '');
+        return protocol === 'capacitor:' || protocol === 'file:';
+    }
+
+    function ensureNativeMessageBadges() {
+        if (!isNativeAppRuntime()) return;
+
+        const menuButtonIds = [
+            'appNativeMenuBtn',
+            'appNativeShellMenuBtn',
+            'appNativeBlogMenuBtn',
+            'appNativeToolsMenuBtn',
+            'appNativeReseauMenuBtn',
+            'appNativeTeamsMenuBtn'
+        ];
+
+        menuButtonIds.forEach((id) => {
+            const button = document.getElementById(id);
+            if (!button) return;
+            let badge = button.querySelector('[data-messages-badge]');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'messages-badge messages-badge--menu';
+                badge.setAttribute('data-messages-badge', 'true');
+                badge.hidden = true;
+                badge.textContent = '0';
+                button.appendChild(badge);
+            }
+        });
+
+        const drawerMessageLinkIds = [
+            'appNativeDrawerMessages',
+            'appNativeShellMessagesLink',
+            'appNativeBlogMessagesLink',
+            'appNativeToolsMessagesLink'
+        ];
+
+        drawerMessageLinkIds.forEach((id) => {
+            const link = document.getElementById(id);
+            if (!link) return;
+            let badge = link.querySelector('[data-messages-badge]');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'messages-badge messages-badge--drawer';
+                badge.setAttribute('data-messages-badge', 'true');
+                badge.hidden = true;
+                badge.textContent = '0';
+                link.appendChild(badge);
+            }
+        });
+    }
+
     function getCurrentUserName() {
         if (window.messagingCore && typeof window.messagingCore.getCurrentUserName === 'function') {
             return window.messagingCore.getCurrentUserName();
@@ -17,22 +78,19 @@
     }
 
     function updateUnreadBadges() {
+        ensureNativeMessageBadges();
+
         const badges = document.querySelectorAll('[data-messages-badge]');
         if (!badges.length) return;
 
         const currentUserName = getCurrentUserName();
-        let unreadActivity = 0;
         let unreadMessages = 0;
-
-        if (currentUserName && window.activityNotifications && typeof window.activityNotifications.getUnreadCount === 'function') {
-            unreadActivity = window.activityNotifications.getUnreadCount(currentUserName);
-        }
 
         if (currentUserName && window.messagingCore && typeof window.messagingCore.getUnreadCount === 'function') {
             unreadMessages = window.messagingCore.getUnreadCount(currentUserName);
         }
 
-        const unreadCount = unreadActivity + unreadMessages;
+        const unreadCount = unreadMessages;
 
         badges.forEach((badge) => {
             if (!badge) return;
@@ -131,6 +189,7 @@
     }
 
     function init() {
+        ensureNativeMessageBadges();
         ensureProfileReportsBadges();
         updateUnreadBadges();
         updateAdminReportsBadges();

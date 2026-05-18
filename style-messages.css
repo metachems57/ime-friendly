@@ -23,6 +23,58 @@
     display: none !important;
 }
 
+.app-native-menu-btn,
+.app-native-shell-menu-btn,
+.app-native-blog-menu-btn,
+.app-native-tools-menu-btn,
+.app-native-reseau-menu-btn,
+.app-native-teams-menu-btn {
+    position: relative;
+}
+
+.messages-badge--menu {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    width: auto !important;
+    min-width: 1.1rem !important;
+    height: 1.1rem !important;
+    font-size: 0.65rem !important;
+    line-height: 1 !important;
+    padding: 0 0.25rem !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 999px !important;
+    background: #e11d48 !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    z-index: 3;
+}
+
+body.is-native-app .app-native-menu-btn .messages-badge--menu,
+body.is-native-app .app-native-shell-menu-btn .messages-badge--menu,
+body.is-native-app .app-native-blog-menu-btn .messages-badge--menu,
+body.is-native-app .app-native-tools-menu-btn .messages-badge--menu,
+body.is-native-app .app-native-reseau-menu-btn .messages-badge--menu,
+body.is-native-app .app-native-teams-menu-btn .messages-badge--menu {
+    width: auto !important;
+    min-width: 1.1rem !important;
+    height: 1.1rem !important;
+    border-radius: 999px !important;
+    background: #e11d48 !important;
+}
+
+.messages-badge--drawer {
+    margin-left: 0.45rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    font-size: 0.65rem;
+    padding: 0 0.25rem;
+    vertical-align: middle;
+}
+
 .profile-reports-badge {
     min-width: 1.35rem;
     height: 1.35rem;
