@@ -445,6 +445,23 @@ input[type="file"]:hover {
     display: none;
 }
 
+/* Preload natif: on masque la version web immédiatement pour éviter le flash. */
+html.native-preload body.page-outils {
+    background: #eef3f8;
+}
+
+html.native-preload body.page-outils .header,
+html.native-preload body.page-outils .footer,
+html.native-preload body.page-outils .container {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+html.native-preload body.page-outils .app-native-tools-chrome,
+html.native-preload body.page-outils .app-native-tools-bottom-bar {
+    display: block !important;
+}
+
 /* ================= Mode App Native: Outils ================= */
 body.is-native-app .app-native-tools-chrome,
 body.is-native-app .app-native-tools-bottom-bar,
