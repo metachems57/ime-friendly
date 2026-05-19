@@ -3,6 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+      (function () {
+        var ua = String((navigator && navigator.userAgent) || '');
+        var protocol = String(window.location.protocol || '');
+        var isNative = (protocol === 'capacitor:' || protocol === 'file:');
+        try {
+          if (!isNative && (window.Capacitor || window.__CAPACITOR__)) isNative = true;
+        } catch (e) {}
+        try {
+          if (!isNative && /capacitor/i.test(ua)) isNative = true;
+        } catch (e) {}
+        try {
+          if (!isNative) {
+            var params = new URLSearchParams(window.location.search || '');
+            if (params.get('fromApp') === '1' || params.get('fromOpen') === '1') isNative = true;
+          }
+        } catch (e) {}
+        if (isNative) {
+          document.documentElement.classList.add('native-preload');
+        }
+      })();
+    </script>
+    <style>
+      html.native-preload body.page-ressources {
+        display: none !important;
+      }
+    </style>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#1f5ea8">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +42,7 @@
     <link rel="stylesheet" href="style-messages.css">
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
-<body>
+<body class="page-ressources">
     <div id="appNativeShell" class="app-native-shell-chrome" aria-hidden="true">
         <div class="app-native-shell-topbar">
             <button id="appNativeShellMenuBtn" class="app-native-shell-menu-btn" type="button" aria-label="Ouvrir le menu">

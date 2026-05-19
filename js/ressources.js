@@ -15,7 +15,21 @@ function isNativeAppRuntime() {
     }
 
     const protocol = String(window.location.protocol || '');
-    return protocol === 'capacitor:' || protocol === 'file:';
+    if (protocol === 'capacitor:' || protocol === 'file:') return true;
+
+    try {
+        const ua = String(window.navigator && window.navigator.userAgent || '');
+        if (/capacitor/i.test(ua)) return true;
+    } catch (error) {
+        // ignore
+    }
+
+    try {
+        const params = new URLSearchParams(window.location.search || '');
+        return params.get('fromApp') === '1' || params.get('fromOpen') === '1';
+    } catch (error) {
+        return false;
+    }
 }
 
 function buildResourceCard(resource) {
@@ -82,6 +96,9 @@ function renderResourcesGrid() {
 }
 
 function initNativeInfiniteCarousel(grid) {
+    if (grid.dataset.nativeInfiniteReady === '1') return;
+    grid.dataset.nativeInfiniteReady = '1';
+
     const cards = Array.from(grid.querySelectorAll('.resource-page-card'));
     if (cards.length <= 1) return;
 
