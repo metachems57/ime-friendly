@@ -239,6 +239,56 @@ body {
     font-weight: 600;
 }
 
+/* ===== Contact V2 (App native) ===== */
+body.is-native-app.page-contact {
+    background: linear-gradient(180deg, #83c3f2 0%, #93cdf6 58%, #a8dbfa 100%);
+    min-height: 100dvh;
+    overflow: hidden;
+}
+
+body.is-native-app.page-contact .contact-main {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0.55rem 0.5rem calc(0.7rem + env(safe-area-inset-bottom));
+    height: calc(100dvh - 3.45rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+body.is-native-app.page-contact .contact-card {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 18px rgba(23, 74, 131, 0.17);
+    padding: 0.85rem 0.9rem;
+}
+
+body.is-native-app.page-contact .contact-card h2 {
+    margin-bottom: 0.35rem;
+    font-size: 1.18rem;
+}
+
+body.is-native-app.page-contact .contact-card .contact-subtitle {
+    margin-top: 0.72rem;
+    font-size: 1.2rem;
+}
+
+body.is-native-app.page-contact .contact-card p {
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+
+body.is-native-app.page-contact .donate-btn {
+    width: 100%;
+    min-height: 2.7rem;
+    border-radius: 12px;
+    font-size: 1rem;
+}
+
 @media (max-width: 640px) {
     .contact-header {
         height: auto;
