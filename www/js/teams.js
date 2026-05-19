@@ -138,7 +138,7 @@ function initNativeTeamsExperience() {
     if (adminResetNode) {
         adminResetNode.addEventListener('click', () => {
             closeNativeTeamsDrawer();
-            if (isCurrentUserAdmin() && typeof window.showAdminResetPassword === 'function') {
+            if (typeof window.showAdminResetPassword === 'function') {
                 window.showAdminResetPassword();
             }
         });

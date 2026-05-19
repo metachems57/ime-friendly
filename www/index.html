@@ -80,13 +80,17 @@
     <div id="appNativeDrawerBackdrop" class="app-native-drawer-backdrop" hidden></div>
     <aside id="appNativeDrawer" class="app-native-drawer" aria-hidden="true">
         <a href="index.html?fromApp=1" class="is-active">Accueil</a>
+        <a href="reseau.html">Réseau</a>
+        <a href="outils.html">Outils</a>
+        <a href="blog.html">Blog</a>
+        <a href="teams.html">Vie de l'IME</a>
         <a id="appNativeDrawerProfile" href="profil.html">Profil</a>
         <a id="appNativeDrawerMessages" href="messagerie.html">Messagerie</a>
-        <button id="appNativeLogoutLink" type="button">Se déconnecter</button>
-        <button id="appNativeAdminResetLink" type="button">Réinitialiser Mdp</button>
         <a href="ressources.html">Ressources</a>
-        <a href="contact.html">Contacte</a>
+        <a href="contact.html">Contact</a>
+        <button id="appNativeAdminResetLink" type="button">Réinitialiser Mdp</button>
         <button id="appNativeAccessibilityLink" type="button">Accessibilité</button>
+        <button id="appNativeLogoutLink" type="button">Se déconnecter</button>
     </aside>
 </div>
 
@@ -348,6 +352,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/admin-reset-helper.js"></script>
     <script src="js/supabase-sync.js"></script>
     <script src="js/messaging-core.js"></script>
     <script src="js/activity-notifications.js"></script>

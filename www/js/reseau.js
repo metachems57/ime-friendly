@@ -176,7 +176,7 @@ function initNativeReseauExperience() {
     if (adminResetNode) {
         adminResetNode.addEventListener('click', () => {
             closeNativeReseauDrawer();
-            if (isAdminUser() && typeof window.showAdminResetPassword === 'function') {
+            if (typeof window.showAdminResetPassword === 'function') {
                 window.showAdminResetPassword();
             }
         });

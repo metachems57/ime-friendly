@@ -147,10 +147,8 @@ function initNativeToolsExperience() {
     if (adminResetNode) {
         adminResetNode.addEventListener('click', () => {
             closeNativeToolsDrawer();
-            if (window.auth && typeof window.auth.isAdmin === 'function' && window.auth.isAdmin()) {
-                if (typeof window.showAdminResetPassword === 'function') {
-                    window.showAdminResetPassword();
-                }
+            if (typeof window.showAdminResetPassword === 'function') {
+                window.showAdminResetPassword();
             }
         });
     }

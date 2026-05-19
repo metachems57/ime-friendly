@@ -321,7 +321,6 @@
         if (resetNode) {
             resetNode.addEventListener('click', () => {
                 closeDrawer();
-                if (!isAdmin()) return;
                 showAdminResetPassword();
             });
         }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ime-friendly-pwa-v47';
+const CACHE_NAME = 'ime-friendly-pwa-v48';
 const OFFLINE_URL = 'offline.html';
 
 const PRECACHE_URLS = [
@@ -44,6 +44,7 @@ const PRECACHE_URLS = [
     'images/ressources/ime-le-point-du-jour.png',
     'js/data-store.js',
     'js/supabase-client.js',
+    'js/admin-reset-helper.js',
     'js/offline-action-queue.js',
     'js/push-notifications.js',
     'js/supabase-sync.js',

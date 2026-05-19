@@ -251,7 +251,7 @@ function initNativeHomeChrome() {
     if (adminResetNode) {
         adminResetNode.addEventListener('click', () => {
             closeNativeDrawer();
-            if (typeof window.showAdminResetPassword === 'function' && isCurrentUserAdmin()) {
+            if (typeof window.showAdminResetPassword === 'function') {
                 window.showAdminResetPassword();
             }
         });

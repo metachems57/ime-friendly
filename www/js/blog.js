@@ -177,7 +177,7 @@ function initNativeBlogExperience() {
     if (adminResetNode) {
         adminResetNode.addEventListener('click', () => {
             closeNativeBlogDrawer();
-            if (isAdminUser() && typeof window.showAdminResetPassword === 'function') {
+            if (typeof window.showAdminResetPassword === 'function') {
                 window.showAdminResetPassword();
             }
         });

@@ -55,17 +55,17 @@
         <div id="appNativeReseauDrawerBackdrop" class="app-native-reseau-drawer-backdrop" hidden></div>
         <aside id="appNativeReseauDrawer" class="app-native-reseau-drawer" aria-hidden="true">
             <a href="index.html?fromApp=1">Accueil</a>
-            <a id="appNativeDrawerProfile" href="profil.html">Profil</a>
-            <a id="appNativeDrawerMessages" href="messagerie.html">Messagerie</a>
-            <button id="appNativeReseauLogoutBtn" type="button">Se déconnecter</button>
             <a href="reseau.html" class="is-active">Réseau</a>
             <a href="outils.html">Outils</a>
             <a href="blog.html">Blog</a>
             <a href="teams.html">Vie de l'IME</a>
-            <button id="appNativeReseauAdminResetLink" type="button">Réinitialiser Mdp</button>
+            <a id="appNativeDrawerProfile" href="profil.html">Profil</a>
+            <a id="appNativeDrawerMessages" href="messagerie.html">Messagerie</a>
             <a href="ressources.html">Ressources</a>
-            <a href="contact.html">Contacte</a>
+            <a href="contact.html">Contact</a>
+            <button id="appNativeReseauAdminResetLink" type="button">Réinitialiser Mdp</button>
             <button id="appNativeReseauAccessibilityLink" type="button">Accessibilité</button>
+            <button id="appNativeReseauLogoutBtn" type="button">Se déconnecter</button>
         </aside>
     </div>
 
@@ -160,6 +160,7 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/supabase-storage.js"></script>
 <script src="js/auth.js"></script>
+    <script src="js/admin-reset-helper.js"></script>
 <script src="js/offline-action-queue.js"></script>
     <script src="js/supabase-sync.js"></script>
 <script src="js/messaging-core.js"></script>

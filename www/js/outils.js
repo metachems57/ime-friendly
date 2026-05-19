@@ -347,8 +347,7 @@
             if (adminResetNode) {
                 adminResetNode.addEventListener('click', () => {
                     closeNativeToolsDrawer();
-                    const canReset = window.auth && typeof window.auth.isAdmin === 'function' && window.auth.isAdmin();
-                    if (canReset && typeof window.showAdminResetPassword === 'function') {
+                    if (typeof window.showAdminResetPassword === 'function') {
                         window.showAdminResetPassword();
                     }
                 });
