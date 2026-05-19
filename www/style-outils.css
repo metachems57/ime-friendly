@@ -691,6 +691,9 @@ body.is-native-app .add-tool-section {
     opacity: 0;
     pointer-events: none;
     transition: transform 0.24s ease, opacity 0.24s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 body.is-native-app.app-native-tools-create-open .add-tool-section {
@@ -721,12 +724,29 @@ body.is-native-app .add-tool-section h2 {
 
 body.is-native-app .add-tool-section .tool-form {
     gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 body.is-native-app .steps-container {
-    max-height: 52vh;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
     overflow-y: auto;
     padding-right: 0.1rem;
+    padding-bottom: 0.35rem;
+}
+
+body.is-native-app .add-tool-section .submit-btn {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+    box-shadow: 0 -6px 14px rgba(255, 255, 255, 0.9);
 }
 
 body.is-native-app .app-native-tools-bottom-bar {
