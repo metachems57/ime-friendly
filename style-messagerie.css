@@ -594,6 +594,131 @@ body {
     background: #f2f6ff;
 }
 
+body.is-native-app.page-messagerie {
+    background: linear-gradient(180deg, #83c3f2 0%, #93cdf6 55%, #a8dbfa 100%);
+    min-height: 100dvh;
+    overflow-x: hidden;
+}
+
+body.is-native-app.page-messagerie .messagerie-main {
+    max-width: none;
+    margin: 0;
+    padding: 0.55rem 0.5rem calc(0.7rem + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(180px, 34vh) minmax(46vh, auto);
+    gap: 0.55rem;
+}
+
+body.is-native-app.page-messagerie .panel {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 18px rgba(23, 74, 131, 0.17);
+}
+
+body.is-native-app.page-messagerie .conversations-panel {
+    padding: 0.72rem;
+    display: grid;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    gap: 0.55rem;
+    min-height: 0;
+}
+
+body.is-native-app.page-messagerie .conversations-panel h2,
+body.is-native-app.page-messagerie .thread-header h2 {
+    font-size: 1.08rem;
+}
+
+body.is-native-app.page-messagerie .notifications-toolbar,
+body.is-native-app.page-messagerie .new-conversation-form {
+    margin: 0;
+}
+
+body.is-native-app.page-messagerie .notifications-btn {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.92rem;
+}
+
+body.is-native-app.page-messagerie .new-conversation-form label {
+    margin-bottom: 0.28rem;
+    font-size: 0.86rem;
+}
+
+body.is-native-app.page-messagerie .new-conversation-row {
+    grid-template-columns: 1fr auto;
+    gap: 0.42rem;
+}
+
+body.is-native-app.page-messagerie .new-conversation-row select,
+body.is-native-app.page-messagerie .new-conversation-row button {
+    min-height: 2.2rem;
+    padding-top: 0.46rem;
+    padding-bottom: 0.46rem;
+}
+
+body.is-native-app.page-messagerie .conversations-list {
+    max-height: none;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 0.12rem;
+}
+
+body.is-native-app.page-messagerie .conversation-item {
+    padding: 0.52rem 0.55rem;
+}
+
+body.is-native-app.page-messagerie .thread-panel {
+    min-height: 0;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+body.is-native-app.page-messagerie .thread-header {
+    padding: 0.72rem;
+}
+
+body.is-native-app.page-messagerie #threadMeta {
+    font-size: 0.85rem;
+}
+
+body.is-native-app.page-messagerie .thread-messages {
+    padding: 0.72rem;
+    min-height: 0;
+}
+
+body.is-native-app.page-messagerie .message-row {
+    max-width: 88%;
+}
+
+body.is-native-app.page-messagerie .message-bubble {
+    padding: 0.54rem 0.62rem;
+}
+
+body.is-native-app.page-messagerie .message-form {
+    padding: 0.68rem 0.72rem;
+}
+
+body.is-native-app.page-messagerie .message-form textarea {
+    min-height: 68px;
+    max-height: 30vh;
+}
+
+body.is-native-app.page-messagerie .message-form-footer {
+    margin-top: 0.35rem;
+}
+
+body.is-native-app.page-messagerie .admin-moderation {
+    margin: 0.55rem 0.5rem calc(0.7rem + env(safe-area-inset-bottom));
+    max-width: none;
+    padding: 0.72rem;
+}
+
+body.is-native-app.page-messagerie .reports-list {
+    grid-template-columns: 1fr;
+}
+
 @media (max-width: 980px) {
     .messagerie-header {
         height: auto;
