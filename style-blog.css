@@ -589,6 +589,23 @@ body {
     display: none;
 }
 
+/* Preload natif: on masque la version web immédiatement pour éviter le flash. */
+html.native-preload body.page-blog {
+    background: #eef3f8;
+}
+
+html.native-preload body.page-blog .header,
+html.native-preload body.page-blog .footer,
+html.native-preload body.page-blog .container {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+html.native-preload body.page-blog .app-native-blog-chrome,
+html.native-preload body.page-blog .app-native-blog-bottom-bar {
+    display: block !important;
+}
+
 /* ================= Mode App Native: Blog ================= */
 body.is-native-app .app-native-blog-chrome,
 body.is-native-app .app-native-blog-bottom-bar,
