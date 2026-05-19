@@ -711,6 +711,23 @@ body {
     display: none;
 }
 
+/* Preload natif: on masque la version web immédiatement pour éviter le flash. */
+html.native-preload body.page-reseau {
+    background: #101216;
+}
+
+html.native-preload body.page-reseau .header,
+html.native-preload body.page-reseau .footer,
+html.native-preload body.page-reseau .container {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+html.native-preload body.page-reseau .app-native-reseau-chrome,
+html.native-preload body.page-reseau .app-native-reseau-bottom-bar {
+    display: block !important;
+}
+
 /* ================= Native app layout (reseau) ================= */
 .app-native-reseau-chrome,
 .app-native-reseau-bottom-bar {

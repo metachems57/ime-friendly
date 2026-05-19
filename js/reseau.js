@@ -26,6 +26,7 @@ const NATIVE_RESEAU_INITIAL_BATCH = 6;
 const NATIVE_RESEAU_BATCH = 5;
 
 function isNativeAppRuntime() {
+    const ua = String(window.navigator && window.navigator.userAgent || '');
     try {
         if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function') {
             return window.Capacitor.isNativePlatform();
@@ -35,7 +36,17 @@ function isNativeAppRuntime() {
     }
 
     const protocol = String(window.location.protocol || '');
-    return protocol === 'capacitor:' || protocol === 'file:';
+    if (protocol === 'capacitor:' || protocol === 'file:') return true;
+    if (/capacitor/i.test(ua)) return true;
+
+    try {
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('fromApp') === '1' || params.get('fromOpen') === '1') return true;
+    } catch (error) {
+        // ignore
+    }
+
+    return false;
 }
 
 function closeNativeReseauDrawer() {
@@ -118,7 +129,13 @@ function logoutFromNativeReseauDrawer() {
 
 function initNativeReseauExperience() {
     if (!isNativeAppRuntime()) return;
+    try {
+        localStorage.setItem('imeNativeRuntime', '1');
+    } catch (error) {
+        // ignore
+    }
     document.body.classList.add('is-native-app');
+    document.documentElement.classList.remove('native-preload');
     updateNativeReseauDrawerLinks();
 
     if (nativeReseauDrawerReady) return;
