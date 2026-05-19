@@ -147,6 +147,14 @@ function initNativeTeamsExperience() {
     if (accessibilityNode) {
         accessibilityNode.addEventListener('click', () => {
             closeNativeTeamsDrawer();
+            if (typeof window.openAccessibilityPanel === 'function') {
+                window.openAccessibilityPanel();
+                return;
+            }
+            if (window.imeAccessibilityPanel && typeof window.imeAccessibilityPanel.open === 'function') {
+                window.imeAccessibilityPanel.open();
+                return;
+            }
             const toggleNode = document.getElementById('a11yToggleBtn');
             if (toggleNode) toggleNode.click();
         });

@@ -330,7 +330,11 @@
 
         document.addEventListener('click', (event) => {
             if (panel.hidden) return;
-            if (event.target && event.target.closest && event.target.closest('#appNativeShellAccessibilityLink')) {
+            if (
+                event.target &&
+                event.target.closest &&
+                (event.target.closest('[id$="AccessibilityLink"]') || event.target.closest('#a11yToggleBtn'))
+            ) {
                 return;
             }
             const clickedInsidePanel = panel.contains(event.target);
@@ -353,6 +357,30 @@
         applyPreferences(preferences);
         syncControls();
     }
+
+    function openAccessibilityPanel() {
+        if (window.imeAccessibilityPanel && typeof window.imeAccessibilityPanel.open === 'function') {
+            window.imeAccessibilityPanel.open();
+            return true;
+        }
+
+        mountAccessibilityUI();
+
+        if (window.imeAccessibilityPanel && typeof window.imeAccessibilityPanel.open === 'function') {
+            window.imeAccessibilityPanel.open();
+            return true;
+        }
+
+        window.setTimeout(() => {
+            if (window.imeAccessibilityPanel && typeof window.imeAccessibilityPanel.open === 'function') {
+                window.imeAccessibilityPanel.open();
+            }
+        }, 80);
+
+        return false;
+    }
+
+    window.openAccessibilityPanel = openAccessibilityPanel;
 
     applyPreferences(readPreferences());
 

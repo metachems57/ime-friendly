@@ -303,6 +303,12 @@
                     return;
                 }
 
+                if (typeof window.openAccessibilityPanel === 'function') {
+                    window.requestAnimationFrame(() => {
+                        window.openAccessibilityPanel();
+                    });
+                    return;
+                }
                 const toggleNode = document.getElementById('a11yToggleBtn');
                 if (toggleNode) {
                     window.requestAnimationFrame(() => {

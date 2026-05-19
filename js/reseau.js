@@ -185,6 +185,14 @@ function initNativeReseauExperience() {
     if (accessibilityNode) {
         accessibilityNode.addEventListener('click', () => {
             closeNativeReseauDrawer();
+            if (typeof window.openAccessibilityPanel === 'function') {
+                window.openAccessibilityPanel();
+                return;
+            }
+            if (window.imeAccessibilityPanel && typeof window.imeAccessibilityPanel.open === 'function') {
+                window.imeAccessibilityPanel.open();
+                return;
+            }
             const toggleNode = document.getElementById('a11yToggleBtn');
             if (toggleNode) toggleNode.click();
         });
