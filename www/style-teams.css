@@ -518,6 +518,22 @@ body {
     display: none;
 }
 
+/* Preload natif: masque immédiat de la version web pour éviter le flash. */
+html.native-preload body.page-teams {
+    background: linear-gradient(180deg, #6ec9f1 0%, #9ed9f4 100%);
+}
+
+html.native-preload body.page-teams .teams-header,
+html.native-preload body.page-teams .teams-main,
+html.native-preload body.page-teams .teams-footer {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+html.native-preload body.page-teams .app-native-teams-chrome {
+    display: block !important;
+}
+
 body.is-native-app .app-native-teams-chrome {
     display: block;
 }

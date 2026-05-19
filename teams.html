@@ -3,6 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+      (function () {
+        var ua = String((navigator && navigator.userAgent) || '');
+        var protocol = String(window.location.protocol || '');
+        var isNative = (protocol === 'capacitor:' || protocol === 'file:');
+        try {
+          if (!isNative && (window.Capacitor || window.__CAPACITOR__)) isNative = true;
+        } catch (e) {}
+        try {
+          if (!isNative && /capacitor/i.test(ua)) isNative = true;
+        } catch (e) {}
+        try {
+          if (!isNative) {
+            var params = new URLSearchParams(window.location.search || '');
+            if (params.get('fromApp') === '1' || params.get('fromOpen') === '1') isNative = true;
+          }
+        } catch (e) {}
+        if (isNative) {
+          document.documentElement.classList.add('native-preload');
+        }
+      })();
+    </script>
+    <style>
+      html.native-preload body.page-teams {
+        display: none !important;
+      }
+    </style>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#1f5ea8">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,7 +43,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style-accessibility.css">
 </head>
-<body>
+<body class="page-teams">
     <div id="appNativeTeamsChrome" class="app-native-teams-chrome" aria-hidden="true">
         <div class="app-native-teams-topbar">
             <button id="appNativeTeamsMenuBtn" class="app-native-teams-menu-btn" type="button" aria-label="Ouvrir le menu">
@@ -27,13 +54,14 @@
         </div>
         <div id="appNativeTeamsDrawerBackdrop" class="app-native-teams-drawer-backdrop" hidden></div>
         <aside id="appNativeTeamsDrawer" class="app-native-teams-drawer" aria-hidden="true">
-            <a href="index.html?fromApp=1" class="is-active">Accueil</a>
+            <a href="index.html?fromApp=1">Accueil</a>
             <a id="appNativeDrawerProfile" href="profil.html">Profil</a>
             <a id="appNativeDrawerMessages" href="messagerie.html">Messagerie</a>
             <button id="appNativeTeamsLogoutBtn" type="button">Se déconnecter</button>
             <a href="reseau.html">Réseau</a>
             <a href="outils.html">Outils</a>
             <a href="blog.html">Blog</a>
+            <a href="teams.html" class="is-active">Vie de l'IME</a>
             <button id="appNativeTeamsAdminResetLink" type="button">Réinitialiser Mdp</button>
             <a href="ressources.html">Ressources</a>
             <a href="contact.html">Contacte</a>
