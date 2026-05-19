@@ -11,6 +11,12 @@
 
 /* Ajustement spécifique pour l'élément "Ressources" */
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -18,6 +24,14 @@ body {
     line-height: 1.6;
     color: var(--text);
     background-color: #f9f9f1;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* Pour empêcher le header de se superposer */
@@ -369,6 +383,7 @@ main.container {
     width: 100%;
     margin: 2rem auto 1.2rem;
     padding: 0 1rem;
+    box-sizing: border-box;
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 1.5rem;
@@ -550,6 +565,9 @@ main.container {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     text-decoration: none;
     padding: 0.55rem 0.85rem;
     border-radius: 10px;
@@ -604,6 +622,7 @@ main.container {
     justify-content: space-between;
     align-items: center;
     gap: 0.6rem;
+    flex-wrap: wrap;
     margin-bottom: 0.45rem;
 }
 
@@ -750,6 +769,102 @@ main.container {
     position: absolute;
     right: 0.75rem;
     top: 0.55rem;
+}
+
+body.is-native-app,
+body.is-native-app main.container,
+body.is-native-app .profile-details,
+body.is-native-app .profile-info,
+body.is-native-app .user-posts {
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+body.is-native-app main.container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0.6rem 0.6rem 1rem;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+}
+
+body.is-native-app .profile-details,
+body.is-native-app .user-posts,
+body.is-native-app #user-posts-container .post,
+body.is-native-app #user-favorites-container .favorite-item {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Préload natif: masque immédiat de la version web du profil */
+html.native-preload body.page-profil {
+    background: linear-gradient(180deg, #1f5ea8 0%, #2f79cd 100%);
+}
+
+html.native-preload body.page-profil header,
+html.native-preload body.page-profil main,
+html.native-preload body.page-profil footer {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+html.native-preload body.page-profil .app-native-shell-chrome {
+    display: block !important;
+}
+
+/* Verrouillage largeur spécifique Profil APK V2 */
+body.page-profil.is-native-app {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+body.page-profil.is-native-app main.container {
+    width: min(100%, 720px);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.6rem;
+    box-sizing: border-box;
+}
+
+body.page-profil.is-native-app #appNativeShell {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+body.page-profil.is-native-app .app-native-shell-topbar {
+    width: 100%;
+    max-width: 100%;
+    left: 0;
+    right: 0;
+    overflow-x: clip;
+}
+
+body.page-profil.is-native-app .app-native-shell-menu-btn {
+    left: 0.5rem;
+}
+
+body.page-profil.is-native-app .app-native-shell-drawer {
+    max-width: calc(100vw - 0.76rem);
+}
+
+body.page-profil.is-native-app .profile-details,
+body.page-profil.is-native-app .user-posts {
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body.page-profil.is-native-app .profile-info,
+body.page-profil.is-native-app .profile-actions,
+body.page-profil.is-native-app #user-favorites-container,
+body.page-profil.is-native-app #user-posts-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 @media (max-width: 840px) {
