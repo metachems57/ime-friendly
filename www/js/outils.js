@@ -7,6 +7,7 @@
         let nativeToolsRenderToken = 0;
         const NATIVE_TOOLS_INITIAL_BATCH = 8;
         const NATIVE_TOOLS_BATCH = 6;
+        const MAX_INLINE_IMAGE_DATA_URL_LENGTH = 260000;
 
         function isNativeAppRuntime() {
             const ua = String(window.navigator && window.navigator.userAgent || '');
@@ -523,10 +524,12 @@
 
         async function uploadToolImageIfNeeded(imageValue) {
             const value = String(imageValue || '').trim();
-            if (!value || !isDataImageUrl(value)) return value;
+            if (!value || !isDataImageUrl(value)) {
+                return { imageData: value, warning: '' };
+            }
 
             if (!window.supabaseStorage || typeof window.supabaseStorage.uploadDataUrl !== 'function') {
-                return value;
+                return { imageData: value, warning: '' };
             }
 
             const uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
@@ -536,16 +539,32 @@
             });
 
             if (!uploadResult.ok) {
-                console.warn('Upload image outil échoué, fallback local/base64.', uploadResult.reason || uploadResult.error || 'unknown');
-                return value;
+                const details = String(uploadResult.error || uploadResult.reason || 'unknown');
+                console.warn('Upload image outil échoué:', details);
+
+                if (value.length <= MAX_INLINE_IMAGE_DATA_URL_LENGTH) {
+                    return {
+                        imageData: value,
+                        warning: `inline_fallback:${details}`
+                    };
+                }
+
+                return {
+                    imageData: '',
+                    warning: `image_dropped:${details}`
+                };
             }
 
-            return String(uploadResult.url || '').trim() || value;
+            return {
+                imageData: String(uploadResult.url || '').trim() || value,
+                warning: ''
+            };
         }
 
         async function normalizeToolStepsForStorage(steps) {
             const safeSteps = Array.isArray(steps) ? steps : [];
             const normalized = [];
+            const warnings = [];
 
             for (const step of safeSteps) {
                 const description = String(step?.description || '').trim();
@@ -553,8 +572,11 @@
                 const uploadedImages = [];
 
                 for (const imageValue of rawImages) {
-                    const nextImage = await uploadToolImageIfNeeded(imageValue);
+                    const nextImageResult = await uploadToolImageIfNeeded(imageValue);
+                    const nextImage = String(nextImageResult?.imageData || '').trim();
+                    const warning = String(nextImageResult?.warning || '').trim();
                     if (nextImage) uploadedImages.push(nextImage);
+                    if (warning) warnings.push(warning);
                 }
 
                 normalized.push({
@@ -563,7 +585,7 @@
                 });
             }
 
-            return normalized;
+            return { steps: normalized, warnings };
         }
 
         function getSupabaseClient() {
@@ -1008,6 +1030,16 @@
                 const stepsContainer = document.getElementById('steps-container');
                 stepsContainer.innerHTML = ''; // Nettoie les étapes
                 addStep(); // Ajoute une nouvelle étape vide
+
+                const uploadWarnings = Array.isArray(savedTool._uploadWarnings) ? savedTool._uploadWarnings : [];
+                const droppedCount = uploadWarnings.filter((item) => String(item).startsWith('image_dropped:')).length;
+                const inlineFallbackCount = uploadWarnings.filter((item) => String(item).startsWith('inline_fallback:')).length;
+                if (droppedCount > 0) {
+                    alert("Outil publié, mais certaines photos n'ont pas pu être envoyées (vérifie les buckets/policies Supabase Storage).");
+                } else if (inlineFallbackCount > 0) {
+                    alert("Outil publié avec fallback image compressée. Vérifie la configuration Supabase Storage pour un upload normal.");
+                }
+
                 if (isNativeAppRuntime()) {
                     closeNativeToolsCreatePanel();
                 }
@@ -1122,7 +1154,9 @@
                 const authorId = await getCurrentSupabaseUserId();
                 if (!supabase || !authorId) return null;
 
-                const normalizedSteps = await normalizeToolStepsForStorage(newTool?.steps);
+                const normalization = await normalizeToolStepsForStorage(newTool?.steps);
+                const normalizedSteps = Array.isArray(normalization?.steps) ? normalization.steps : [];
+                const uploadWarnings = Array.isArray(normalization?.warnings) ? normalization.warnings : [];
 
                 const payload = {
                     author_id: authorId,
@@ -1153,7 +1187,10 @@
                 const tools = readTools();
                 tools.unshift(savedTool);
                 writeTools(tools);
-                return savedTool;
+                return {
+                    ...savedTool,
+                    _uploadWarnings: uploadWarnings
+                };
             }
 
             let tools = readTools();

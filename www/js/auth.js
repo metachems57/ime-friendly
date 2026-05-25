@@ -503,11 +503,17 @@
         try {
             const { data } = await supabase.auth.getSession();
             const sessionUser = data && data.session && data.session.user;
-            if (!sessionUser) return;
+            if (!sessionUser) {
+                clearSession();
+                return;
+            }
 
             const profile = await readSupabaseProfile(supabase, sessionUser.id);
             const isValidated = !!(profile && profile.is_validated);
-            if (!isValidated) return;
+            if (!isValidated) {
+                clearSession();
+                return;
+            }
 
             const user = {
                 email: normalizeEmail(sessionUser.email || ''),

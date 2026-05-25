@@ -24,6 +24,7 @@ let nativeReseauRenderedCount = 0;
 let nativeReseauScrollHandler = null;
 const NATIVE_RESEAU_INITIAL_BATCH = 6;
 const NATIVE_RESEAU_BATCH = 5;
+const MAX_INLINE_IMAGE_DATA_URL_LENGTH = 260000;
 
 function isNativeAppRuntime() {
     const ua = String(window.navigator && window.navigator.userAgent || '');
@@ -711,24 +712,50 @@ function isDataImageUrl(value) {
 
 async function uploadReseauImageIfNeeded(imageValue) {
     const value = String(imageValue || '').trim();
-    if (!value || !isDataImageUrl(value)) return value;
+    if (!value || !isDataImageUrl(value)) {
+        return { imageData: value, warning: '' };
+    }
 
     if (!window.supabaseStorage || typeof window.supabaseStorage.uploadDataUrl !== 'function') {
-        return value;
+        return { imageData: value, warning: '' };
     }
 
-    const uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
-        bucket: 'reseau-media',
-        folder: 'posts',
-        fileNamePrefix: 'reseau-post'
-    });
+    let uploadResult = null;
+    try {
+        uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
+            bucket: 'reseau-media',
+            folder: 'posts',
+            fileNamePrefix: 'reseau-post'
+        });
+    } catch (error) {
+        uploadResult = {
+            ok: false,
+            reason: 'upload_throw',
+            error: String(error && error.message || error || 'upload_throw')
+        };
+    }
 
     if (!uploadResult.ok) {
-        console.warn('Upload image réseau échoué, fallback local/base64.', uploadResult.reason || uploadResult.error || 'unknown');
-        return value;
+        const details = String(uploadResult.error || uploadResult.reason || 'unknown');
+        console.warn('Upload image réseau échoué:', details);
+
+        if (value.length <= MAX_INLINE_IMAGE_DATA_URL_LENGTH) {
+            return {
+                imageData: value,
+                warning: `inline_fallback:${details}`
+            };
+        }
+
+        return {
+            imageData: '',
+            warning: `image_dropped:${details}`
+        };
     }
 
-    return String(uploadResult.url || '').trim() || value;
+    return {
+        imageData: String(uploadResult.url || '').trim() || value,
+        warning: ''
+    };
 }
 
 function getHighlightPostIdFromUrl() {
@@ -926,12 +953,12 @@ async function insertReseauPostToSupabase(postData) {
         throw new Error('auth_unavailable');
     }
 
-    const imageData = await uploadReseauImageIfNeeded(postData?.image);
+    const imageResult = await uploadReseauImageIfNeeded(postData?.image);
     const payload = {
         author_id: authorId,
         title: String(postData?.title || '').trim(),
         content: String(postData?.content || '').trim(),
-        image_data: String(imageData || '').trim(),
+        image_data: String(imageResult?.imageData || '').trim(),
         likes_count: 0
     };
 
@@ -939,7 +966,10 @@ async function insertReseauPostToSupabase(postData) {
     if (error) {
         throw new Error(error.message || 'insert_failed');
     }
-    return true;
+    return {
+        ok: true,
+        warning: String(imageResult?.warning || '')
+    };
 }
 
 async function insertReseauCommentToSupabase(postId, commentText) {
@@ -1044,6 +1074,11 @@ document.getElementById('postForm').addEventListener('submit', async function(e)
 
     if (!saveResult.queued) {
         await loadPosts();
+        if (saveResult.warning.startsWith('image_dropped:')) {
+            alert("Post publié, mais la photo n'a pas pu être envoyée (vérifie les buckets/policies Supabase Storage).");
+        } else if (saveResult.warning.startsWith('inline_fallback:')) {
+            alert("Post publié avec une image compressée en fallback. Vérifie la configuration Supabase Storage pour un upload normal.");
+        }
     } else {
         alert("Pas de réseau: votre post est en file d'attente et sera envoyé automatiquement.");
     }
@@ -1061,8 +1096,12 @@ async function saveNewPost(postData) {
 
     if (isSupabaseReady()) {
         try {
-            await insertReseauPostToSupabase(postData);
-            return { ok: true, queued: false };
+            const remoteResult = await insertReseauPostToSupabase(postData);
+            return {
+                ok: true,
+                queued: false,
+                warning: String(remoteResult?.warning || '')
+            };
         } catch (error) {
             if (shouldQueueOfflineAction(error)) {
                 const queued = queueReseauAction('reseau.createPost', {
@@ -1075,14 +1114,14 @@ async function saveNewPost(postData) {
                 }
             }
             console.error('Erreur création post réseau (Supabase):', error.message || error);
-            return { ok: false, queued: false };
+            return { ok: false, queued: false, warning: '' };
         }
     }
 
     const posts = readPosts();
     posts.unshift(postData);
     writePosts(posts);
-    return { ok: true, queued: false };
+    return { ok: true, queued: false, warning: '' };
 }
 
 // Charge les posts depuis le localStorage et les affiche

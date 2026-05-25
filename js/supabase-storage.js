@@ -29,12 +29,28 @@
 
     async function dataUrlToBlob(dataUrl) {
         const value = String(dataUrl || '');
-        if (!value.startsWith('data:')) {
+        if (!value.startsWith('data:') || !value.includes(',')) {
             throw new Error('invalid_data_url');
         }
 
-        const response = await fetch(value);
-        return response.blob();
+        const commaIndex = value.indexOf(',');
+        const header = value.slice(0, commaIndex);
+        const payload = value.slice(commaIndex + 1);
+        const mimeMatch = header.match(/^data:([^;,]+)/i);
+        const mimeType = String(mimeMatch && mimeMatch[1] || 'application/octet-stream').trim();
+        const isBase64 = /;base64/i.test(header);
+
+        if (isBase64) {
+            const binary = atob(payload);
+            const bytes = new Uint8Array(binary.length);
+            for (let index = 0; index < binary.length; index += 1) {
+                bytes[index] = binary.charCodeAt(index);
+            }
+            return new Blob([bytes], { type: mimeType });
+        }
+
+        const decodedText = decodeURIComponent(payload);
+        return new Blob([decodedText], { type: mimeType });
     }
 
     async function uploadFile(fileOrBlob, options = {}) {
@@ -67,7 +83,12 @@
             });
 
         if (uploadError) {
-            return { ok: false, reason: 'upload_failed', error: uploadError.message || 'upload_failed' };
+            return {
+                ok: false,
+                reason: 'upload_failed',
+                error: uploadError.message || 'upload_failed',
+                code: String(uploadError.code || uploadError.statusCode || '')
+            };
         }
 
         const { data: publicUrlData } = supabase
@@ -89,11 +110,19 @@
     }
 
     async function uploadDataUrl(dataUrl, options = {}) {
-        const blob = await dataUrlToBlob(dataUrl);
-        return uploadFile(blob, {
-            ...options,
-            contentType: blob.type || options.contentType
-        });
+        try {
+            const blob = await dataUrlToBlob(dataUrl);
+            return uploadFile(blob, {
+                ...options,
+                contentType: blob.type || options.contentType
+            });
+        } catch (error) {
+            return {
+                ok: false,
+                reason: 'data_url_decode_failed',
+                error: String(error && error.message || error || 'data_url_decode_failed')
+            };
+        }
     }
 
     window.supabaseStorage = {
@@ -104,4 +133,3 @@
         uploadDataUrl
     };
 })();
-
