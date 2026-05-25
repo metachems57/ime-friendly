@@ -212,6 +212,8 @@ function initNativeReseauExperience() {
                 alert("Mode invité: connectez-vous pour publier.");
                 return;
             }
+            // Flux "Publier": la sélection de photo doit ouvrir la bibliothèque.
+            prepareImageInputForLibrary();
             closeNativeReseauDrawer();
             openNativeCreatePanel();
         });
@@ -891,6 +893,13 @@ function displayImagePreview(file) {
         };
         reader.readAsDataURL(file);
     }
+}
+
+function prepareImageInputForLibrary() {
+    const fileInput = document.getElementById('post-image');
+    if (!fileInput) return;
+    fileInput.setAttribute('accept', 'image/*');
+    fileInput.removeAttribute('capture');
 }
 
 function openCamera() {

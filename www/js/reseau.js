@@ -212,6 +212,8 @@ function initNativeReseauExperience() {
                 alert("Mode invité: connectez-vous pour publier.");
                 return;
             }
+            // Flux "Publier": la sélection de photo doit ouvrir la bibliothèque.
+            prepareImageInputForLibrary();
             closeNativeReseauDrawer();
             openNativeCreatePanel();
         });
@@ -720,20 +722,11 @@ async function uploadReseauImageIfNeeded(imageValue) {
         return { imageData: value, warning: '' };
     }
 
-    let uploadResult = null;
-    try {
-        uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
-            bucket: 'reseau-media',
-            folder: 'posts',
-            fileNamePrefix: 'reseau-post'
-        });
-    } catch (error) {
-        uploadResult = {
-            ok: false,
-            reason: 'upload_throw',
-            error: String(error && error.message || error || 'upload_throw')
-        };
-    }
+    const uploadResult = await window.supabaseStorage.uploadDataUrl(value, {
+        bucket: 'reseau-media',
+        folder: 'posts',
+        fileNamePrefix: 'reseau-post'
+    });
 
     if (!uploadResult.ok) {
         const details = String(uploadResult.error || uploadResult.reason || 'unknown');
@@ -900,6 +893,13 @@ function displayImagePreview(file) {
         };
         reader.readAsDataURL(file);
     }
+}
+
+function prepareImageInputForLibrary() {
+    const fileInput = document.getElementById('post-image');
+    if (!fileInput) return;
+    fileInput.setAttribute('accept', 'image/*');
+    fileInput.removeAttribute('capture');
 }
 
 function openCamera() {

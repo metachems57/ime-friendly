@@ -47,6 +47,7 @@
             message.includes('failed to fetch') ||
             message.includes('network') ||
             message.includes('timeout') ||
+            message.includes('fetch') ||
             message.includes('offline') ||
             message.includes('load failed') ||
             message.includes('temporarily unavailable')
