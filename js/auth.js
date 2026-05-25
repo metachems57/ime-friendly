@@ -278,8 +278,8 @@
     async function readSupabaseProfile(supabase, userId) {
         if (!supabase || !userId) return null;
         const queryVariants = [
-            'id, display_name, role, is_validated, ime_status, professional_title, job_title, profile_photo',
             'id, display_name, role, is_validated, ime_status, professional_title, job_title, avatar_url',
+            'id, display_name, role, is_validated, ime_status, professional_title, job_title, profile_photo',
             'id, display_name, role, is_validated, ime_status, professional_title, job_title',
             'id, display_name, role, is_validated, ime_status, professional_title',
             'id, display_name, role, is_validated, ime_status, job_title',

@@ -378,8 +378,8 @@ async function updateProfilePhotoInSupabase(profileUser, dataUrl, fallbackName =
     if (!nextPhoto) return { ok: false, reason: 'invalid_photo' };
 
     const attempts = [
-        { profile_photo: nextPhoto },
-        { avatar_url: nextPhoto }
+        { avatar_url: nextPhoto },
+        { profile_photo: nextPhoto }
     ];
 
     let lastFailure = { ok: false, reason: 'update_failed' };

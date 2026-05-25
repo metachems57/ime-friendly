@@ -115,7 +115,7 @@
         const map = new Map();
         if (!supabase) return map;
 
-        const candidates = ['profile_photo', 'avatar_url'];
+        const candidates = ['avatar_url', 'profile_photo'];
 
         for (const field of candidates) {
             const { data, error } = await supabase

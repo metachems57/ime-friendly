@@ -278,8 +278,8 @@
     async function readSupabaseProfile(supabase, userId) {
         if (!supabase || !userId) return null;
         const queryVariants = [
-            'id, display_name, role, is_validated, ime_status, professional_title, job_title, profile_photo',
             'id, display_name, role, is_validated, ime_status, professional_title, job_title, avatar_url',
+            'id, display_name, role, is_validated, ime_status, professional_title, job_title, profile_photo',
             'id, display_name, role, is_validated, ime_status, professional_title, job_title',
             'id, display_name, role, is_validated, ime_status, professional_title',
             'id, display_name, role, is_validated, ime_status, job_title',
@@ -503,17 +503,11 @@
         try {
             const { data } = await supabase.auth.getSession();
             const sessionUser = data && data.session && data.session.user;
-            if (!sessionUser) {
-                clearSession();
-                return;
-            }
+            if (!sessionUser) return;
 
             const profile = await readSupabaseProfile(supabase, sessionUser.id);
             const isValidated = !!(profile && profile.is_validated);
-            if (!isValidated) {
-                clearSession();
-                return;
-            }
+            if (!isValidated) return;
 
             const user = {
                 email: normalizeEmail(sessionUser.email || ''),
