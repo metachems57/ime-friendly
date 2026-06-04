@@ -898,6 +898,22 @@ function restorePostScrollAnchor(anchor) {
     });
 }
 
+function renderNewCommentInPost(postId, comment, commentIndex) {
+    const postElement = document.querySelector(`.post[data-id="${Number(postId)}"]`);
+    if (!postElement) return;
+
+    const commentList = postElement.querySelector('.comment-list');
+    if (commentList) {
+        commentList.insertAdjacentHTML('afterbegin', createCommentElement(comment, postId, commentIndex));
+    }
+
+    const commentButton = postElement.querySelector('.comment-btn');
+    if (commentButton) {
+        const nextCount = postElement.querySelectorAll('.comment-item').length;
+        commentButton.textContent = `💬 Commenter (${nextCount})`;
+    }
+}
+
 // ==================== GESTION ÉMOJIS ====================
 function initEmojiPicker() {
     const emojiPicker = document.querySelector('.emoji-picker');
@@ -1070,16 +1086,25 @@ async function insertReseauCommentToSupabase(postId, commentText) {
         throw new Error('auth_unavailable');
     }
 
-    const { error } = await supabase.from('reseau_comments').insert({
-        post_id: Number(postId),
-        author_id: authorId,
-        content: String(commentText || '').trim()
-    });
+    const { data, error } = await supabase.from('reseau_comments')
+        .insert({
+            post_id: Number(postId),
+            author_id: authorId,
+            content: String(commentText || '').trim()
+        })
+        .select('id, author_id, content, created_at')
+        .single();
 
     if (error) {
         throw new Error(error.message || 'insert_comment_failed');
     }
-    return true;
+    return {
+        id: Number(data?.id),
+        authorId: String(data?.author_id || authorId),
+        author: getCurrentUserName(),
+        text: String(data?.content || commentText || ''),
+        date: data?.created_at || new Date().toISOString()
+    };
 }
 
 async function incrementReseauLikeInSupabase(postId) {
@@ -1381,11 +1406,10 @@ async function addComment(event, postId) {
 
             if (isSupabaseReady()) {
                 try {
-                    const scrollAnchor = capturePostScrollAnchor(postId);
-                    await insertReseauCommentToSupabase(postId, commentText);
-                    notifyCommentOnPost(targetPost, userName, previousAuthors);
-                    await loadPosts();
-                    restorePostScrollAnchor(scrollAnchor);
+                    const newComment = await insertReseauCommentToSupabase(postId, commentText);
+                    targetPost.comments.push(newComment);
+                    writePosts(posts);
+                    renderNewCommentInPost(postId, newComment, targetPost.comments.length - 1);
                     input.value = '';
                     return;
                 } catch (error) {
@@ -1410,9 +1434,7 @@ async function addComment(event, postId) {
             targetPost.comments.push(newComment);
             writePosts(posts);
             notifyCommentOnPost(targetPost, userName, previousAuthors);
-            const scrollAnchor = capturePostScrollAnchor(postId);
-            await loadPosts();
-            restorePostScrollAnchor(scrollAnchor);
+            renderNewCommentInPost(postId, newComment, targetPost.comments.length - 1);
             input.value = '';
         }
     }
