@@ -876,6 +876,28 @@ function highlightPostFromUrl() {
     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function capturePostScrollAnchor(postId) {
+    const postElement = document.querySelector(`.post[data-id="${Number(postId)}"]`);
+    if (!postElement) return null;
+
+    return {
+        postId: Number(postId),
+        offsetTop: postElement.getBoundingClientRect().top
+    };
+}
+
+function restorePostScrollAnchor(anchor) {
+    if (!anchor || !Number.isFinite(anchor.postId)) return;
+
+    window.requestAnimationFrame(() => {
+        const postElement = document.querySelector(`.post[data-id="${anchor.postId}"]`);
+        if (!postElement) return;
+
+        const nextTop = postElement.getBoundingClientRect().top;
+        window.scrollBy(0, nextTop - anchor.offsetTop);
+    });
+}
+
 // ==================== GESTION ÉMOJIS ====================
 function initEmojiPicker() {
     const emojiPicker = document.querySelector('.emoji-picker');
@@ -1359,9 +1381,11 @@ async function addComment(event, postId) {
 
             if (isSupabaseReady()) {
                 try {
+                    const scrollAnchor = capturePostScrollAnchor(postId);
                     await insertReseauCommentToSupabase(postId, commentText);
                     notifyCommentOnPost(targetPost, userName, previousAuthors);
                     await loadPosts();
+                    restorePostScrollAnchor(scrollAnchor);
                     input.value = '';
                     return;
                 } catch (error) {
@@ -1386,8 +1410,9 @@ async function addComment(event, postId) {
             targetPost.comments.push(newComment);
             writePosts(posts);
             notifyCommentOnPost(targetPost, userName, previousAuthors);
-            
+            const scrollAnchor = capturePostScrollAnchor(postId);
             await loadPosts();
+            restorePostScrollAnchor(scrollAnchor);
             input.value = '';
         }
     }

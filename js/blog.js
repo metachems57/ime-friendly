@@ -1183,6 +1183,28 @@ function scrollToHighlightedPost(postNode) {
     scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function capturePostScrollAnchor(postId) {
+    const postElement = document.querySelector(`.post[data-id="${Number(postId)}"]`);
+    if (!postElement) return null;
+
+    return {
+        postId: Number(postId),
+        offsetTop: postElement.getBoundingClientRect().top
+    };
+}
+
+function restorePostScrollAnchor(anchor) {
+    if (!anchor || !Number.isFinite(anchor.postId)) return;
+
+    window.requestAnimationFrame(() => {
+        const postElement = document.querySelector(`.post[data-id="${anchor.postId}"]`);
+        if (!postElement) return;
+
+        const nextTop = postElement.getBoundingClientRect().top;
+        window.scrollBy(0, nextTop - anchor.offsetTop);
+    });
+}
+
 function highlightPostsFromUrl() {
     const highlightPostId = getHighlightPostIdFromUrl();
     const highlightDate = getHighlightDateFromUrl();
@@ -1567,9 +1589,11 @@ async function deletePost(postId) {
 
                 if (isSupabaseReady()) {
                     try {
+                        const scrollAnchor = capturePostScrollAnchor(postId);
                         await insertBlogCommentToSupabase(postId, commentText);
                         notifyCommentOnBlogPost(targetPost, author, previousAuthors);
                         await loadPosts();
+                        restorePostScrollAnchor(scrollAnchor);
                         input.value = '';
                         return;
                     } catch (error) {
@@ -1593,7 +1617,9 @@ async function deletePost(postId) {
                 targetPost.comments.push(newComment);
                 writeBlogPosts(posts);
                 notifyCommentOnBlogPost(targetPost, author, previousAuthors);
+                const scrollAnchor = capturePostScrollAnchor(postId);
                 await loadPosts();
+                restorePostScrollAnchor(scrollAnchor);
                 input.value = '';
             }
         }
