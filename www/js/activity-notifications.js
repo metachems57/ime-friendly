@@ -96,6 +96,28 @@
         return readUsers().find((user) => String(user && user.supabaseId || '').trim() === id) || null;
     }
 
+    async function fetchProfilesMapByIds(userIds) {
+        const supabase = getSupabaseClient();
+        const ids = Array.from(new Set((userIds || []).map((id) => String(id || '').trim()).filter(Boolean)));
+        const map = new Map();
+        if (!supabase || !ids.length) return map;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', ids);
+
+        if (error || !Array.isArray(data)) return map;
+
+        data.forEach((row) => {
+            const id = String(row && row.id || '').trim();
+            if (!id) return;
+            map.set(id, normalizeName(row.display_name) || 'Utilisateur');
+        });
+
+        return map;
+    }
+
     function getCurrentUserName() {
         const user = getCurrentUser();
         if (user && user.name) return normalizeName(user.name);
@@ -147,8 +169,10 @@
         const id = Number(item.id);
         const recipient = normalizeName(item.recipient);
         const recipientKey = normalizeKey(item.recipientKey || recipient);
+        const recipientId = normalizeName(item.recipientId);
         const actor = normalizeName(item.actor);
         const actorKey = normalizeKey(item.actorKey || actor);
+        const actorId = normalizeName(item.actorId);
         const type = normalizeName(item.type).toLowerCase() || 'comment';
         const source = normalizeName(item.source).toLowerCase() || '';
         const postId = Number(item.postId);
@@ -163,8 +187,10 @@
             id,
             recipient,
             recipientKey,
+            recipientId,
             actor,
             actorKey,
+            actorId,
             type,
             source,
             postId: Number.isFinite(postId) ? postId : 0,
@@ -198,27 +224,31 @@
             ? encodeURIComponent(String(rawPostId))
             : '';
         const safeTitle = encodeURIComponent(String(notification.postTitle || '').trim().slice(0, 120));
+        const opensComments = ['comment', 'reply'].includes(String(notification.type || '').toLowerCase());
+        const commentParams = opensComments
+            ? `&showComments=1&highlightCommentAuthor=${encodeURIComponent(notification.recipient || '')}`
+            : '';
 
         if (notification.source === 'blog' && safePostId) {
             if (safeTitle) {
-                return `blog.html?highlightPost=${safePostId}&highlightTitle=${safeTitle}#post-${safePostId}`;
+                return `blog.html?highlightPost=${safePostId}&highlightTitle=${safeTitle}${commentParams}#post-${safePostId}`;
             }
-            return `blog.html?highlightPost=${safePostId}#post-${safePostId}`;
+            return `blog.html?highlightPost=${safePostId}${commentParams}#post-${safePostId}`;
         }
 
         if (notification.source === 'blog' && safeTitle) {
-            return `blog.html?highlightTitle=${safeTitle}`;
+            return `blog.html?highlightTitle=${safeTitle}${commentParams}`;
         }
 
         if (notification.source === 'reseau' && safePostId) {
             if (safeTitle) {
-                return `reseau.html?highlightPost=${safePostId}&highlightTitle=${safeTitle}#post-${safePostId}`;
+                return `reseau.html?highlightPost=${safePostId}&highlightTitle=${safeTitle}${commentParams}#post-${safePostId}`;
             }
-            return `reseau.html?highlightPost=${safePostId}#post-${safePostId}`;
+            return `reseau.html?highlightPost=${safePostId}${commentParams}#post-${safePostId}`;
         }
 
         if (notification.source === 'reseau' && safeTitle) {
-            return `reseau.html?highlightTitle=${safeTitle}`;
+            return `reseau.html?highlightTitle=${safeTitle}${commentParams}`;
         }
 
         return 'index.html';
@@ -255,6 +285,8 @@
         const actor = normalizeName(payload && payload.actor);
         const recipientKey = normalizeKey(recipient);
         const actorKey = normalizeKey(actor);
+        const recipientIdFromPayload = normalizeName(payload && payload.recipientId);
+        const actorIdFromPayload = normalizeName(payload && payload.actorId);
 
         if (!recipient || !actor || !recipientKey || !actorKey) {
             return { ok: false, reason: 'invalid_users' };
@@ -274,8 +306,10 @@
             id: tempId,
             recipient,
             recipientKey,
+            recipientId: recipientIdFromPayload,
             actor,
             actorKey,
+            actorId: actorIdFromPayload,
             type,
             source,
             postId: Number.isFinite(postId) ? postId : 0,
@@ -299,8 +333,8 @@
 
         if (isSupabaseReady()) {
             const supabase = getSupabaseClient();
-            const recipientId = getUserIdByName(recipient);
-            const actorId = getUserIdByName(actor) || getCurrentUserId();
+            const recipientId = recipientIdFromPayload || getUserIdByName(recipient);
+            const actorId = actorIdFromPayload || getUserIdByName(actor) || getCurrentUserId();
 
             if (supabase && recipientId) {
                 supabase
@@ -478,13 +512,21 @@
                 return false;
             }
 
+            const profileIds = data
+                .flatMap((row) => [row.recipient_id, row.actor_id])
+                .map((id) => String(id || '').trim())
+                .filter(Boolean);
+            const profilesMap = await fetchProfilesMapByIds(profileIds);
+
             const mapped = data
                 .map((row) => sanitizeNotification({
                     id: Number(row.id),
-                    recipient: getUserNameById(row.recipient_id) || currentUserName,
-                    recipientKey: normalizeKey(getUserNameById(row.recipient_id) || currentUserName),
-                    actor: getUserNameById(row.actor_id) || '',
-                    actorKey: normalizeKey(getUserNameById(row.actor_id) || ''),
+                    recipient: profilesMap.get(String(row.recipient_id || '').trim()) || getUserNameById(row.recipient_id) || currentUserName,
+                    recipientKey: normalizeKey(profilesMap.get(String(row.recipient_id || '').trim()) || getUserNameById(row.recipient_id) || currentUserName),
+                    recipientId: String(row.recipient_id || '').trim(),
+                    actor: profilesMap.get(String(row.actor_id || '').trim()) || getUserNameById(row.actor_id) || '',
+                    actorKey: normalizeKey(profilesMap.get(String(row.actor_id || '').trim()) || getUserNameById(row.actor_id) || ''),
+                    actorId: String(row.actor_id || '').trim(),
                     type: String(row.type || 'comment').toLowerCase(),
                     source: String(row.source || '').toLowerCase(),
                     postId: Number(row.source_post_id) || 0,

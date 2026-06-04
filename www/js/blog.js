@@ -418,6 +418,16 @@ function getHighlightTitleFromUrl() {
     return String(params.get('highlightTitle') || '').trim();
 }
 
+function shouldShowCommentsFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('showComments') === '1';
+}
+
+function getHighlightCommentAuthorFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return String(params.get('highlightCommentAuthor') || '').trim();
+}
+
 function canDeleteByAuthor(authorName) {
     if (window.auth && typeof window.auth.canDeleteAuthorContent === 'function') {
         return window.auth.canDeleteAuthorContent(authorName);
@@ -448,6 +458,17 @@ function profileLinkHtml(authorName) {
 
 function normalizeKey(value) {
     return String(value || '').trim().toLowerCase();
+}
+
+function getCurrentSupabaseUserIdSync() {
+    const currentUser = window.auth && typeof window.auth.getCurrentUser === 'function'
+        ? window.auth.getCurrentUser()
+        : null;
+    return String(
+        currentUser?.supabaseId ||
+        localStorage.getItem('userSupabaseId') ||
+        ''
+    ).trim();
 }
 
 function getSupabaseClient() {
@@ -761,27 +782,37 @@ function notifyCommentOnBlogPost(post, actorName, existingCommentAuthors) {
     if (!post || !actorName) return;
 
     const actorKey = normalizeKey(actorName);
-    const recipients = new Set();
+    const recipients = new Map();
     const authorKey = normalizeKey(post.author);
 
     if (post.author) {
-        recipients.add(String(post.author).trim());
+        recipients.set(authorKey, {
+            name: String(post.author).trim(),
+            id: post.authorId || ''
+        });
     }
 
     (existingCommentAuthors || []).forEach((name) => {
-        const cleanName = String(name || '').trim();
+        const cleanName = String(name?.author || name?.name || name || '').trim();
         if (!cleanName) return;
-        recipients.add(cleanName);
+        const cleanKey = normalizeKey(cleanName);
+        recipients.set(cleanKey, {
+            name: cleanName,
+            id: name?.authorId || name?.id || ''
+        });
     });
 
-    recipients.forEach((recipientName) => {
+    recipients.forEach((recipient) => {
+        const recipientName = recipient.name;
         const recipientKey = normalizeKey(recipientName);
         if (!recipientKey || recipientKey === actorKey) return;
 
         const notificationType = recipientKey === authorKey ? 'comment' : 'reply';
         addActivityNotification({
             recipient: recipientName,
+            recipientId: recipient.id || '',
             actor: actorName,
+            actorId: getCurrentSupabaseUserIdSync(),
             type: notificationType,
             source: 'blog',
             postId: Number(post.id) || 0,
@@ -1122,6 +1153,36 @@ function initEventDateFieldVisibility() {
     updateEventDateFieldVisibility();
 }
 
+function highlightCommentInPost(postNode) {
+    if (!postNode) return null;
+
+    const author = getHighlightCommentAuthorFromUrl();
+    if (!author) return null;
+
+    const authorKey = normalizeKey(author);
+    const matchingComments = Array.from(postNode.querySelectorAll('.comment-item'))
+        .filter((commentNode) => commentNode.dataset.authorKey === authorKey);
+
+    const targetComment = matchingComments[0] || null;
+    if (!targetComment) return null;
+
+    postNode.querySelectorAll('.comment-highlight').forEach((commentNode) => {
+        commentNode.classList.remove('comment-highlight');
+    });
+    targetComment.classList.add('comment-highlight');
+    return targetComment;
+}
+
+function scrollToHighlightedPost(postNode) {
+    if (!postNode) return;
+
+    postNode.classList.add('post-highlight');
+    const scrollTarget = shouldShowCommentsFromUrl()
+        ? (highlightCommentInPost(postNode) || postNode)
+        : postNode;
+    scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function highlightPostsFromUrl() {
     const highlightPostId = getHighlightPostIdFromUrl();
     const highlightDate = getHighlightDateFromUrl();
@@ -1137,8 +1198,7 @@ function highlightPostsFromUrl() {
         if (!targetPost) {
             // Continue with fallback title/hash.
         } else {
-            targetPost.classList.add('post-highlight');
-            targetPost.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollToHighlightedPost(targetPost);
             return;
         }
     }
@@ -1152,8 +1212,7 @@ function highlightPostsFromUrl() {
         });
 
         if (matchingByTitle) {
-            matchingByTitle.classList.add('post-highlight');
-            matchingByTitle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollToHighlightedPost(matchingByTitle);
             return;
         }
     }
@@ -1162,8 +1221,7 @@ function highlightPostsFromUrl() {
         const hashId = window.location.hash.replace('#', '');
         const hashTarget = hashId ? document.getElementById(hashId) : null;
         if (hashTarget) {
-            hashTarget.classList.add('post-highlight');
-            hashTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollToHighlightedPost(hashTarget);
             return;
         }
     }
@@ -1464,12 +1522,14 @@ async function deletePost(postId) {
         const canDeleteComment = isAdminUser() || canDeleteByAuthor(comment?.author);
         const commentId = Number(comment?.id);
         const commentRef = Number.isFinite(commentId) ? `id:${commentId}` : `idx:${commentIndex}`;
+        const safeCommentId = Number.isFinite(commentId) ? String(commentId) : '';
+        const safeAuthorKey = escapeHtml(normalizeKey(comment?.author));
         const deleteButton = canDeleteComment
             ? `<button class="delete-comment-btn" onclick="deleteComment(${postId}, '${commentRef}')">X</button>`
             : '';
 
         return `
-            <p class="comment-item">
+            <p class="comment-item" data-comment-id="${safeCommentId}" data-author-key="${safeAuthorKey}">
                 <strong>${profileLinkHtml(comment.author)}</strong>: ${escapeHtml(comment.text)}
                 ${deleteButton}
             </p>
@@ -1498,7 +1558,12 @@ async function deletePost(postId) {
                 if (!targetPost.comments) {
                     targetPost.comments = [];
                 }
-                const previousAuthors = targetPost.comments.map((comment) => comment?.author).filter(Boolean);
+                const previousAuthors = targetPost.comments
+                    .map((comment) => ({
+                        author: comment?.author,
+                        authorId: comment?.authorId || ''
+                    }))
+                    .filter((item) => item.author);
 
                 if (isSupabaseReady()) {
                     try {

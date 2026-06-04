@@ -544,6 +544,12 @@ body {
     color: #24364d;
 }
 
+.comment-highlight {
+    border-color: #1f5ea8 !important;
+    background: #eaf4ff !important;
+    box-shadow: 0 0 0 3px rgba(31, 94, 168, 0.14);
+}
+
 .comment-item strong {
     color: #164b8b;
 }

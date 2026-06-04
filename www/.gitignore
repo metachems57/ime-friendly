@@ -5,3 +5,6 @@ supabase/.temp/
 *.log
 
 tokens.txt
+android/keystore.properties
+android/*.keystore
+android/*.jks

@@ -76,7 +76,7 @@ function updateNotificationsBadges() {
     });
 }
 
-function renderNotificationsPanel() {
+async function renderNotificationsPanel() {
     const { notificationsPanel, notificationsList, notificationsEmpty } = getNodes();
     if (!notificationsPanel || !notificationsList || !notificationsEmpty) return;
 
@@ -88,6 +88,22 @@ function renderNotificationsPanel() {
         return;
     }
 
+    notificationsEmpty.hidden = false;
+    notificationsEmpty.textContent = 'Chargement des notifications...';
+
+    if (typeof window.activityNotifications.syncFromSupabase === 'function') {
+        try {
+            await Promise.race([
+                window.activityNotifications.syncFromSupabase({ force: true, maxAgeMs: 0 }),
+                new Promise((resolve) => setTimeout(resolve, 3500))
+            ]);
+        } catch (error) {
+            // La liste locale reste disponible si la synchro distante echoue.
+        }
+    }
+
+    notificationsList.innerHTML = '';
+
     const notifications = window.activityNotifications.listForUser(state.currentUserName, {
         includeRead: false,
         limit: 80
@@ -95,6 +111,7 @@ function renderNotificationsPanel() {
 
     if (!notifications.length) {
         notificationsEmpty.hidden = false;
+        notificationsEmpty.textContent = 'Aucune notification pour le moment.';
         return;
     }
 
@@ -120,6 +137,10 @@ function renderNotificationsPanel() {
             if (window.activityNotifications && typeof window.activityNotifications.markAsRead === 'function') {
                 window.activityNotifications.markAsRead(notification.id, state.currentUserName);
             }
+            itemLink.remove();
+            if (!notificationsList.querySelector('.notification-item')) {
+                notificationsEmpty.hidden = false;
+            }
             updateNotificationsBadges();
             if (window.messagesWidget && typeof window.messagesWidget.updateUnreadBadges === 'function') {
                 window.messagesWidget.updateUnreadBadges();
@@ -130,7 +151,7 @@ function renderNotificationsPanel() {
     });
 }
 
-function toggleNotificationsPanel() {
+async function toggleNotificationsPanel() {
     const { notificationsPanel } = getNodes();
     if (!notificationsPanel) return;
 
@@ -138,7 +159,7 @@ function toggleNotificationsPanel() {
         notificationsPanel.hidden = false;
         state.notificationsOpen = true;
 
-        renderNotificationsPanel();
+        await renderNotificationsPanel();
         updateNotificationsBadges();
 
         if (window.messagesWidget && typeof window.messagesWidget.updateUnreadBadges === 'function') {
@@ -543,7 +564,7 @@ function syncConversations(preferredPartner = '') {
     renderAdminReports();
     updateNotificationsBadges();
     if (state.notificationsOpen) {
-        renderNotificationsPanel();
+        renderNotificationsPanel().catch(() => {});
     }
 
     if (window.messagesWidget && typeof window.messagesWidget.updateUnreadBadges === 'function') {
