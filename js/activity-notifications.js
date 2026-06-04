@@ -431,6 +431,53 @@
         return true;
     }
 
+    function markPostAsRead(notification, userName) {
+        const userKey = normalizeKey(userName);
+        const source = normalizeName(notification && notification.source).toLowerCase();
+        const postId = Number(notification && notification.postId);
+        if (!userKey || !source || !Number.isFinite(postId) || postId <= 0) {
+            return markAsRead(notification && notification.id, userName);
+        }
+
+        const notifications = readNotifications();
+        let changed = false;
+        notifications.forEach((item) => {
+            if (
+                item.recipientKey === userKey &&
+                !item.read &&
+                item.source === source &&
+                Number(item.postId) === postId
+            ) {
+                item.read = true;
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            writeNotifications(notifications);
+        }
+
+        if (isSupabaseReady()) {
+            const supabase = getSupabaseClient();
+            const userId = getUserIdByName(userName);
+            if (supabase && userId) {
+                supabase
+                    .from('activity_notifications')
+                    .update({ is_read: true, read_at: new Date().toISOString() })
+                    .eq('recipient_id', userId)
+                    .eq('source', source)
+                    .eq('source_post_id', postId)
+                    .eq('is_read', false)
+                    .then(() => {
+                        queueBackgroundSync(true);
+                    })
+                    .catch(() => {});
+            }
+        }
+
+        return changed;
+    }
+
     async function syncFromSupabase(options = {}) {
         const force = !!options.force;
         const maxAgeMs = Number(options.maxAgeMs);
@@ -520,6 +567,7 @@
         getUnreadCount,
         markAllAsRead,
         markAsRead,
+        markPostAsRead,
         getNotificationMessage,
         getNotificationLink: buildPostLink,
         syncFromSupabase

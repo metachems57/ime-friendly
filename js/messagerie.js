@@ -120,6 +120,8 @@ async function renderNotificationsPanel() {
     notifications.forEach((notification) => {
         const itemLink = document.createElement('a');
         itemLink.className = 'notification-item';
+        itemLink.dataset.source = notification.source || '';
+        itemLink.dataset.postId = String(notification.postId || '');
         itemLink.href = window.activityNotifications.getNotificationLink(notification);
 
         const title = document.createElement('strong');
@@ -134,10 +136,20 @@ async function renderNotificationsPanel() {
         itemLink.appendChild(details);
 
         itemLink.addEventListener('click', () => {
-            if (window.activityNotifications && typeof window.activityNotifications.markAsRead === 'function') {
+            if (window.activityNotifications && typeof window.activityNotifications.markPostAsRead === 'function') {
+                window.activityNotifications.markPostAsRead(notification, state.currentUserName);
+            } else if (window.activityNotifications && typeof window.activityNotifications.markAsRead === 'function') {
                 window.activityNotifications.markAsRead(notification.id, state.currentUserName);
             }
-            itemLink.remove();
+
+            const source = String(notification.source || '');
+            const postId = String(notification.postId || '');
+            notificationsList.querySelectorAll('.notification-item').forEach((node) => {
+                if (node.dataset.source === source && node.dataset.postId === postId) {
+                    node.remove();
+                }
+            });
+
             if (!notificationsList.querySelector('.notification-item')) {
                 notificationsEmpty.hidden = false;
             }

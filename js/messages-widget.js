@@ -44,7 +44,8 @@
             'appNativeDrawerMessages',
             'appNativeShellMessagesLink',
             'appNativeBlogMessagesLink',
-            'appNativeToolsMessagesLink'
+            'appNativeToolsMessagesLink',
+            'appNativeTeamsMessagesLink'
         ];
 
         drawerMessageLinkIds.forEach((id) => {
@@ -85,12 +86,17 @@
 
         const currentUserName = getCurrentUserName();
         let unreadMessages = 0;
+        let unreadNotifications = 0;
 
         if (currentUserName && window.messagingCore && typeof window.messagingCore.getUnreadCount === 'function') {
             unreadMessages = window.messagingCore.getUnreadCount(currentUserName);
         }
 
-        const unreadCount = unreadMessages;
+        if (currentUserName && window.activityNotifications && typeof window.activityNotifications.getUnreadCount === 'function') {
+            unreadNotifications = window.activityNotifications.getUnreadCount(currentUserName);
+        }
+
+        const unreadCount = unreadMessages + unreadNotifications;
 
         badges.forEach((badge) => {
             if (!badge) return;
@@ -102,6 +108,17 @@
                 badge.textContent = '0';
             }
         });
+    }
+
+    function syncActivityNotificationsForBadges() {
+        const currentUserName = getCurrentUserName();
+        if (!currentUserName) return;
+        if (!window.activityNotifications || typeof window.activityNotifications.syncFromSupabase !== 'function') return;
+
+        window.activityNotifications
+            .syncFromSupabase({ maxAgeMs: 15000 })
+            .then(() => updateUnreadBadges())
+            .catch(() => {});
     }
 
     function isAdminSession() {
@@ -192,6 +209,7 @@
         ensureNativeMessageBadges();
         ensureProfileReportsBadges();
         updateUnreadBadges();
+        syncActivityNotificationsForBadges();
         updateAdminReportsBadges();
 
         window.addEventListener('storage', (event) => {
@@ -212,6 +230,7 @@
 
         if (!refreshTimer) {
             refreshTimer = window.setInterval(() => {
+                syncActivityNotificationsForBadges();
                 updateUnreadBadges();
                 updateAdminReportsBadges();
             }, 5000);
