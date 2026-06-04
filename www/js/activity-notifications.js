@@ -331,48 +331,6 @@
         notifications.unshift(notification);
         writeNotifications(notifications);
 
-        if (isSupabaseReady()) {
-            const supabase = getSupabaseClient();
-            const recipientId = recipientIdFromPayload || getUserIdByName(recipient);
-            const actorId = actorIdFromPayload || getUserIdByName(actor) || getCurrentUserId();
-
-            if (supabase && recipientId) {
-                supabase
-                    .from('activity_notifications')
-                    .insert({
-                        recipient_id: recipientId,
-                        actor_id: actorId || null,
-                        type: notification.type,
-                        source: notification.source || 'reseau',
-                        source_post_id: Number.isFinite(notification.postId) && notification.postId > 0
-                            ? notification.postId
-                            : null,
-                        post_title: notification.postTitle,
-                        message: getNotificationMessage(notification),
-                        is_read: false
-                    })
-                    .select('id, created_at')
-                    .single()
-                    .then(({ data, error }) => {
-                        if (error || !data) return;
-
-                        const savedId = Number(data.id);
-                        const nextNotifications = readNotifications();
-                        const localNotification = nextNotifications.find((item) => Number(item.id) === tempId);
-                        if (!localNotification) return;
-
-                        if (Number.isFinite(savedId)) {
-                            localNotification.id = savedId;
-                        }
-                        if (data.created_at) {
-                            localNotification.createdAt = data.created_at;
-                        }
-                        writeNotifications(nextNotifications);
-                    })
-                    .catch(() => {});
-            }
-        }
-
         return { ok: true, notification };
     }
 
