@@ -198,6 +198,10 @@
             return `reseau.html?highlightPost=${postId}#post-${postId}`;
         }
 
+        if ((source === 'tools' || source === 'outils') && postId > 0) {
+            return `detail-outil.html?id=${postId}`;
+        }
+
         if (source === 'messagerie') return 'messagerie.html';
         return 'index.html';
     }
@@ -236,7 +240,9 @@
     async function init() {
         if (initialized) return true;
         if (!isNativeAppRuntime()) return false;
-        if (localStorage.getItem('imePushEnabled') !== 'true') return false;
+        if (localStorage.getItem('imeConnected') !== 'true') return false;
+        if (localStorage.getItem('imePushEnabled') === 'false') return false;
+        localStorage.setItem('imePushEnabled', 'true');
 
         const pushCapable = await isNativePushCapable();
         if (!pushCapable) {
@@ -302,8 +308,7 @@
                 console.warn('[push] permission not granted');
             }
         } catch (error) {
-            console.warn('[push] registration flow failed, disabling native push:', error);
-            localStorage.setItem('imePushEnabled', 'false');
+            console.warn('[push] registration flow failed:', error);
             return false;
         }
 

@@ -118,6 +118,12 @@
         writeSessionValue(SESSION_KEYS.role, normalizeRole(safeUser.role || USER_ROLES.parent));
         writeSessionValue(SESSION_KEYS.lastLogin, safeUser.lastLogin || new Date().toISOString());
         writeSessionValue(SESSION_KEYS.supabaseId, String(safeUser.supabaseId || '').trim());
+
+        if (window.pushNotifications && typeof window.pushNotifications.init === 'function') {
+            setTimeout(() => {
+                window.pushNotifications.init().catch(() => {});
+            }, 0);
+        }
     }
 
     function toSupabaseRole(localRole) {

@@ -1,5 +1,6 @@
 (function () {
     const STORAGE_KEY = 'activityNotifications';
+    const READ_POSTS_KEY = 'activityNotificationsReadPosts';
     const MAX_NOTIFICATIONS = 800;
 
     const SYNC_STORAGE_KEY = 'activityNotificationsLastSyncAt';
@@ -217,6 +218,55 @@
         writeArray(STORAGE_KEY, safeItems.slice(0, MAX_NOTIFICATIONS));
     }
 
+    function readPostMarkers() {
+        const items = readArray(READ_POSTS_KEY);
+        const now = Date.now();
+        const maxAgeMs = 30 * 24 * 60 * 60 * 1000;
+
+        return items
+            .map((item) => {
+                const userKey = normalizeKey(item && item.userKey);
+                const source = normalizeName(item && item.source).toLowerCase();
+                const postId = Number(item && item.postId);
+                const readAt = normalizeName(item && item.readAt);
+                const timestamp = Date.parse(readAt);
+                if (!userKey || !source || !Number.isFinite(postId) || postId <= 0 || !Number.isFinite(timestamp)) {
+                    return null;
+                }
+                if (now - timestamp > maxAgeMs) return null;
+                return { userKey, source, postId, readAt };
+            })
+            .filter(Boolean);
+    }
+
+    function writePostMarkers(items) {
+        const safeItems = Array.isArray(items) ? items : [];
+        writeArray(READ_POSTS_KEY, safeItems.slice(-MAX_NOTIFICATIONS));
+    }
+
+    function getPostMarkerKey(userKey, source, postId) {
+        return `${normalizeKey(userKey)}|${normalizeName(source).toLowerCase()}|${Number(postId) || 0}`;
+    }
+
+    function rememberPostRead(userName, source, postId, readAt = new Date().toISOString()) {
+        const userKey = normalizeKey(userName);
+        const safeSource = normalizeName(source).toLowerCase();
+        const safePostId = Number(postId);
+        if (!userKey || !safeSource || !Number.isFinite(safePostId) || safePostId <= 0) return;
+
+        const targetKey = getPostMarkerKey(userKey, safeSource, safePostId);
+        const markers = readPostMarkers().filter((item) => (
+            getPostMarkerKey(item.userKey, item.source, item.postId) !== targetKey
+        ));
+        markers.push({
+            userKey,
+            source: safeSource,
+            postId: safePostId,
+            readAt
+        });
+        writePostMarkers(markers);
+    }
+
     function buildPostLink(notification) {
         if (notification.link) return notification.link;
         const rawPostId = Number(notification.postId);
@@ -400,7 +450,7 @@
         return changed;
     }
 
-    function markAsRead(notificationId, userName) {
+    async function markAsRead(notificationId, userName) {
         const userKey = normalizeKey(userName);
         const id = Number(notificationId);
         if (!userKey || !Number.isFinite(id)) return false;
@@ -416,28 +466,32 @@
             const supabase = getSupabaseClient();
             const userId = getUserIdByName(userName);
             if (supabase && userId) {
-                supabase
-                    .from('activity_notifications')
-                    .update({ is_read: true, read_at: new Date().toISOString() })
-                    .eq('id', id)
-                    .eq('recipient_id', userId)
-                    .then(() => {
-                        queueBackgroundSync(true);
-                    })
-                    .catch(() => {});
+                try {
+                    await supabase
+                        .from('activity_notifications')
+                        .update({ is_read: true, read_at: new Date().toISOString() })
+                        .eq('id', id)
+                        .eq('recipient_id', userId);
+                    queueBackgroundSync(true);
+                } catch (error) {
+                    return true;
+                }
             }
         }
 
         return true;
     }
 
-    function markPostAsRead(notification, userName) {
+    async function markPostAsRead(notification, userName) {
         const userKey = normalizeKey(userName);
         const source = normalizeName(notification && notification.source).toLowerCase();
         const postId = Number(notification && notification.postId);
         if (!userKey || !source || !Number.isFinite(postId) || postId <= 0) {
             return markAsRead(notification && notification.id, userName);
         }
+
+        const readAt = new Date().toISOString();
+        rememberPostRead(userName, source, postId, readAt);
 
         const notifications = readNotifications();
         let changed = false;
@@ -461,17 +515,18 @@
             const supabase = getSupabaseClient();
             const userId = getUserIdByName(userName);
             if (supabase && userId) {
-                supabase
-                    .from('activity_notifications')
-                    .update({ is_read: true, read_at: new Date().toISOString() })
-                    .eq('recipient_id', userId)
-                    .eq('source', source)
-                    .eq('source_post_id', postId)
-                    .eq('is_read', false)
-                    .then(() => {
-                        queueBackgroundSync(true);
-                    })
-                    .catch(() => {});
+                try {
+                    await supabase
+                        .from('activity_notifications')
+                        .update({ is_read: true, read_at: readAt })
+                        .eq('recipient_id', userId)
+                        .eq('source', source)
+                        .eq('source_post_id', postId)
+                        .eq('is_read', false);
+                    queueBackgroundSync(true);
+                } catch (error) {
+                    return changed;
+                }
             }
         }
 
@@ -523,6 +578,13 @@
                 .filter(Boolean);
             const profilesMap = await fetchProfilesMapByIds(profileIds);
 
+            const currentUserKey = normalizeKey(currentUserName);
+            const localNotifications = readNotifications();
+            const localReadById = new Map(localNotifications.map((item) => [Number(item.id), !!item.read]));
+            const postReadMarkers = new Map(readPostMarkers()
+                .filter((item) => item.userKey === currentUserKey)
+                .map((item) => [getPostMarkerKey(item.userKey, item.source, item.postId), Date.parse(item.readAt) || 0]));
+
             const mapped = data
                 .map((row) => sanitizeNotification({
                     id: Number(row.id),
@@ -537,13 +599,18 @@
                     postId: Number(row.source_post_id) || 0,
                     postTitle: String(row.post_title || 'Publication'),
                     createdAt: row.created_at || new Date().toISOString(),
-                    read: !!row.is_read,
+                    read: !!row.is_read || !!localReadById.get(Number(row.id)) || (() => {
+                        const source = String(row.source || '').toLowerCase();
+                        const postId = Number(row.source_post_id) || 0;
+                        const postReadAt = postReadMarkers.get(getPostMarkerKey(currentUserKey, source, postId)) || 0;
+                        const notificationCreatedAt = Date.parse(row.created_at || '') || 0;
+                        return postReadAt > 0 && notificationCreatedAt > 0 && notificationCreatedAt <= postReadAt;
+                    })(),
                     link: ''
                 }))
                 .filter(Boolean);
 
-            const currentUserKey = normalizeKey(currentUserName);
-            const otherUsersNotifications = readNotifications().filter((item) => item.recipientKey !== currentUserKey);
+            const otherUsersNotifications = localNotifications.filter((item) => item.recipientKey !== currentUserKey);
             writeNotifications([...mapped, ...otherUsersNotifications]);
 
             lastSyncRun = Date.now();

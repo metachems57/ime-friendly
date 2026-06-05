@@ -135,11 +135,14 @@ async function renderNotificationsPanel() {
         itemLink.appendChild(title);
         itemLink.appendChild(details);
 
-        itemLink.addEventListener('click', () => {
+        itemLink.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const targetHref = itemLink.href;
+
             if (window.activityNotifications && typeof window.activityNotifications.markPostAsRead === 'function') {
-                window.activityNotifications.markPostAsRead(notification, state.currentUserName);
+                await window.activityNotifications.markPostAsRead(notification, state.currentUserName);
             } else if (window.activityNotifications && typeof window.activityNotifications.markAsRead === 'function') {
-                window.activityNotifications.markAsRead(notification.id, state.currentUserName);
+                await window.activityNotifications.markAsRead(notification.id, state.currentUserName);
             }
 
             const source = String(notification.source || '');
@@ -157,6 +160,8 @@ async function renderNotificationsPanel() {
             if (window.messagesWidget && typeof window.messagesWidget.updateUnreadBadges === 'function') {
                 window.messagesWidget.updateUnreadBadges();
             }
+
+            window.location.href = targetHref;
         });
 
         notificationsList.appendChild(itemLink);
