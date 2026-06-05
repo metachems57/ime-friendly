@@ -6,9 +6,19 @@ import androidx.activity.OnBackPressedCallback;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+    private static final String OPENING_URL = "https://localhost/ouverture.html?fromApp=1";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState == null && bridge != null && bridge.getWebView() != null) {
+            bridge.getWebView().post(() -> {
+                if (bridge != null && bridge.getWebView() != null) {
+                    bridge.getWebView().loadUrl(OPENING_URL);
+                }
+            });
+        }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -21,7 +31,7 @@ public class MainActivity extends BridgeActivity {
 
                     final String currentUrl = bridge.getWebView().getUrl();
                     if (currentUrl != null && !isRootPage(currentUrl)) {
-                        bridge.getWebView().loadUrl("file:///android_asset/public/ouverture.html?fromApp=1");
+                        bridge.getWebView().loadUrl(OPENING_URL);
                         return;
                     }
                 }

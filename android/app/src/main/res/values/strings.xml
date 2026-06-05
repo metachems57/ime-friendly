@@ -4,4 +4,5 @@
     <string name="title_activity_main">ime-friendly</string>
     <string name="package_name">com.imefriendly.app</string>
     <string name="custom_url_scheme">com.imefriendly.app</string>
+    <string name="default_notification_channel_id">ime_friendly_push</string>
 </resources>

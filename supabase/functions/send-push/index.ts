@@ -296,6 +296,8 @@ async function sendToToken(
         priority: "HIGH",
         notification: {
           click_action: "OPEN_APP",
+          channel_id: "ime_friendly_push",
+          sound: "default",
         },
       },
     },

@@ -3,6 +3,7 @@
     let currentToken = '';
     let runtimeConfigPromise = null;
     const PENDING_TOKEN_KEY = 'imePushPendingToken';
+    const PUSH_CHANNEL_ID = 'ime_friendly_push';
 
     function isNativeAppRuntime() {
         try {
@@ -237,11 +238,33 @@
         console.info('[push] received:', title, body);
     }
 
+    async function ensureAndroidPushChannel(push) {
+        if (!push || typeof push.createChannel !== 'function') return;
+        if (getPlatform() !== 'android') return;
+
+        try {
+            await push.createChannel({
+                id: PUSH_CHANNEL_ID,
+                name: 'IME-Friendly',
+                description: 'Messages, notifications et nouvelles publications IME-Friendly.',
+                importance: 4,
+                visibility: 1,
+                vibration: true,
+                lights: true,
+                lightColor: '#26A69A'
+            });
+        } catch (error) {
+            console.warn('[push] channel creation failed:', error);
+        }
+    }
+
     async function init() {
-        if (initialized) return true;
         if (!isNativeAppRuntime()) return false;
         if (localStorage.getItem('imeConnected') !== 'true') return false;
-        if (localStorage.getItem('imePushEnabled') === 'false') return false;
+        if (initialized) {
+            await flushPendingPushToken();
+            return true;
+        }
         localStorage.setItem('imePushEnabled', 'true');
 
         const pushCapable = await isNativePushCapable();
@@ -302,6 +325,7 @@
             }
 
             if (permission?.receive === 'granted') {
+                await ensureAndroidPushChannel(push);
                 await push.register();
                 await flushPendingPushToken();
             } else {
@@ -316,6 +340,16 @@
             if (event.key === 'imeConnected' || event.key === 'userName') {
                 flushPendingPushToken().catch(() => {});
             }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                flushPendingPushToken().catch(() => {});
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            flushPendingPushToken().catch(() => {});
         });
 
         return true;
