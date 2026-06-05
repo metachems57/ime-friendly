@@ -5,6 +5,8 @@ supabase/.temp/
 *.log
 
 tokens.txt
+*firebase-adminsdk*.json
+android/app/*firebase-adminsdk*.json
 android/keystore.properties
 android/*.keystore
 android/*.jks
