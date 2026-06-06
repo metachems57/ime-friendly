@@ -184,6 +184,9 @@
     }
 
     function buildTargetLink(payloadData) {
+        const explicitLink = String(payloadData?.link || '').trim();
+        if (explicitLink) return explicitLink;
+
         const source = String(payloadData?.source || '').trim().toLowerCase();
         const postId = Number(payloadData?.postId || payloadData?.source_post_id || 0);
         const title = String(payloadData?.title || payloadData?.post_title || '').trim();
