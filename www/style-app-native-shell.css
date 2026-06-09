@@ -37,6 +37,37 @@ body.is-native-app .app-native-shell-topbar h2 {
     font-weight: 800;
 }
 
+body.is-native-app .app-native-shell-title-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
+    max-width: calc(100vw - 5.5rem);
+    text-align: center;
+}
+
+body.is-native-app .app-native-shell-title-stack p {
+    display: none;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.94);
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.15;
+}
+
+body.is-native-app.page-ressources .app-native-shell-topbar {
+    height: 4.25rem;
+}
+
+body.is-native-app.page-ressources .app-native-shell-topbar h2 {
+    font-size: 1.55rem;
+}
+
+body.is-native-app.page-ressources .app-native-shell-title-stack p {
+    display: block;
+}
+
 body.is-native-app .app-native-shell-menu-btn {
     position: absolute;
     top: 0.42rem;

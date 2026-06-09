@@ -287,8 +287,8 @@ body.is-native-app.page-ressources {
 body.is-native-app.page-ressources .ressources-main {
     max-width: none;
     margin: 0;
-    padding: 0.4rem 0.4rem 0.45rem;
-    height: calc(100dvh - 3.45rem);
+    padding: 1.2rem 0.4rem 0.45rem;
+    height: calc(100dvh - 4.25rem);
     display: flex;
     flex-direction: column;
     gap: 0;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ime-friendly-pwa-v65';
+const CACHE_NAME = 'ime-friendly-pwa-v67';
 const OFFLINE_URL = 'offline.html';
 
 const PRECACHE_URLS = [
